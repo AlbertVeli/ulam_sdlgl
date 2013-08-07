@@ -1,7 +1,7 @@
 # (k) ALL RIGHTS REVERSED - Reprint what you like
 
 eXe = ulam
-OBJS = $(eXe).o primes.o
+OBJS = $(eXe).o primes.o sdlgl.o
 
 # Uncomment line below to enable debug build
 #DEBUG = yes
