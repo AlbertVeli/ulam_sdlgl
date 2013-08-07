@@ -48,6 +48,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "primes.h"
+
 #ifndef UNUSED
 #define UNUSED __attribute__ ((unused))
 #endif
@@ -75,75 +77,6 @@ int save_screenshots = 0;
 /* Screenshot pixel data */
 GLubyte *ssdata = NULL;
 
-/* Prime numbers */
-#define NUM_PRIMES (1<<14)
-Uint32 curr_prime_ix = 3;
-Uint8 *primes = NULL;
-
-
-/* Simple prime number "sieve" */
-static int is_prime(Uint32 num)
-{
-   Uint32 i;
-   Uint8 *p;
-   Uint32 limit;
-
-   /* Quickly sort out even numbers */
-   if ((num & 1) == 0) {
-      return 0;
-   }
-
-   /* Check if divisible by primes we have so far.
-    *
-    * If num is composite, one of the composites muste be less than
-    * square root of num.  Only need to loop up to square root.
-    *
-    * For now, just loop to half (which is always bigger than square
-    * root of num) so we don't have to do the expensive square root
-    * calculation. This could be optimized so square root is
-    * calculated if num is bigger than some limit.
-    */
-   limit = (num >> 1) + 1;
-   for (i = 3, p = &primes[3]; i < limit; i += 2, p += 2) {
-      if ((*p) && ((num % i) == 0)) {
-         /* Not a prime */
-         return 0;
-      }
-   }
-
-   /* This must be a prime */
-   return 1;
-}
-
-
-static void init_primes(void)
-{
-   Uint8 *p;
-
-   primes = malloc(NUM_PRIMES);
-   if (!primes) {
-      fprintf(stderr, "Could not init primes\n");
-      exit(EXIT_FAILURE);
-   }
-
-   /* Start at 3 */
-   primes[0] = 0; /* Invalid, just set to 0 */
-   primes[1] = 1;
-   primes[2] = 1;
-
-   curr_prime_ix = 3;
-   p = &primes[curr_prime_ix];
-
-   /* Fill in prime/composite array */
-   for (; curr_prime_ix < NUM_PRIMES; curr_prime_ix++) {
-      if (is_prime(curr_prime_ix)) {
-         *p = 1;
-      } else {
-         *p = 0;
-      }
-      p++;
-   }
-}
 
 
 /* From lesson09 NeHe OpenGL tutorial */
@@ -236,10 +169,8 @@ static void init_gl(int w, int h)
 
 static void cleanup(void)
 {
-   if (primes) {
-      free(primes);
-      primes = NULL;
-   }
+   cleanup_primes();
+
    if (ssdata) {
       free(ssdata);
       ssdata = NULL;
