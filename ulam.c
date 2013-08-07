@@ -35,6 +35,7 @@
 #include <SDL.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "primes.h"
 #include "sdlgl.h"
@@ -45,18 +46,87 @@ static float zoom = -5;
 
 /* Colors for composites/primes */
 
-#define COLOR_COMPOSITES 1
-#ifdef COLOR_COMPOSITES
-#define NUM_COLORS 256 /* Primes, Composites filled in by init */
-GLubyte r[NUM_COLORS] = { 64 };
-GLubyte g[NUM_COLORS] = { 0 };
-GLubyte b[NUM_COLORS] = { 255 };
-#else
-#define NUM_COLORS 2 /* Comp, Prime */
+#define NUM_COLORS 256 /* Comp, Prime */
 GLubyte r[NUM_COLORS] = { 32, 64 };
 GLubyte g[NUM_COLORS] = { 32, 0 };
 GLubyte b[NUM_COLORS] = { 32, 255 };
-#endif
+
+
+/* Cmdline options */
+struct opts
+{
+   int width;
+   int height;
+   int fullscreen;
+   int save;
+   int composites;
+};
+
+struct opts opt;
+
+static void print_usage(void)
+{
+   printf("Usage: ulam [options]\n\n"
+          "OPTIONS\n\n"
+          "-w <width>  (default 640)\n"
+          "-h <height> (default 480)\n"
+          "-f          (fullstreen, default off)\n"
+          "-s          (save screenshots, default off)\n"
+          "-c          (show composites as grayscale, default off)\n\n"
+          );
+}
+
+static int parse_cmdline(int argc, char *argv[])
+{
+   int c;
+
+   /* Defaults */
+   opt.width = 640;
+   opt.height = 480;
+   opt.fullscreen = 0;
+   opt.save = 0;
+   opt.composites = 0;
+
+   opterr = 0;
+   while ((c = getopt (argc, argv, "w:h:fsc")) != -1) {
+      switch (c) {
+
+      case 'w':
+         opt.width = strtoul(optarg, NULL, 0);
+         break;
+
+      case 'h':
+         opt.height = strtoul(optarg, NULL, 0);
+         break;
+
+      case 'f':
+         opt.fullscreen = 1;
+         break;
+
+      case 's':
+         opt.save = 1;
+         break;
+
+      case 'c':
+         opt.composites = 1;
+         break;
+
+      case '?':
+         /* Did not get argument */
+         fprintf(stderr, "\nA Invalid argument, 0:1\n\n");
+         print_usage();
+         return 1;
+         break;
+
+      default:
+         print_usage();
+         return 1;
+         break;
+      }
+   }
+
+   return 0;
+}
 
 
 static void cleanup(void)
@@ -70,9 +140,13 @@ static void init_everything(void)
 {
    printf("Initializing primes, this may take a while...\n");
 
-#ifdef COLOR_COMPOSITES
-   {
+   if (opt.composites) {
       int i, c;
+      /* Prime color */
+      r[0] = 64;
+      g[0] = 0;
+      b[0] = 255;
+      /* Composite grayscale */
       for (i = 1; i < 256; i++) {
          c = 16 + i * 8;
          if (c > 255) {
@@ -82,21 +156,16 @@ static void init_everything(void)
          g[i] = c;
          b[i] = c;
       }
+      init_prime_composites();
+   } else {
+      init_primes();
    }
-   init_prime_composites();
-#else
-   init_primes();
-#endif
-
    printf("Done\n");
 
    /* Run cleanup() at exit */
    atexit(cleanup);
 
-   init_sdlgl(WIDTH, HEIGHT, 0, "Ulam Spiral");
-   /*                        ^
-    *                   fullscreen?
-    */
+   init_sdlgl(opt.width, opt.height, opt.fullscreen, "Star.bmp", "Ulam Spiral");
 }
 
 
@@ -160,7 +229,7 @@ static void check_events(void)
 /* Draw one frame */
 static void draw_scene(void)
 {
-   int composite;
+   int colour;
    int state = 0;
    int curr_count = 0;
    int counts = 1;
@@ -196,7 +265,7 @@ static void draw_scene(void)
    p = &primes[1];
    for (i = 1; i < drawnum; i++) {
 
-      composite = *p++;
+      colour = *p++;
 
       /* Draw stars in spiral */
       switch (state) {
@@ -244,7 +313,7 @@ static void draw_scene(void)
       }
 
       /* Draw one star */
-      glColor4ub(r[composite], g[composite], b[composite], 255);
+      glColor4ub(r[colour], g[colour], b[colour], 255);
       glBegin(GL_QUADS);
       glTexCoord2f(0, 0); glVertex3f(-1, -1,  0);
       glTexCoord2f(1, 0); glVertex3f( 1, -1,  0);
@@ -253,8 +322,8 @@ static void draw_scene(void)
       glEnd();
    }
 
-   if (save_screenshots && (zoom < 0)) {
-      save_screenshot(framecount, WIDTH, HEIGHT);
+   if (opt.save && (zoom < 0)) {
+      save_screenshot(framecount, opt.width, opt.height);
    }
 
    /* Show frame */
@@ -264,8 +333,12 @@ static void draw_scene(void)
 }
 
 
-int main(int argc UNUSED, char *argv[] UNUSED)
+int main(int argc, char *argv[])
 {
+   if (parse_cmdline(argc, argv)) {
+      return 1;
+   }
+
    init_everything();
 
    /* main loop */
@@ -279,8 +352,10 @@ int main(int argc UNUSED, char *argv[] UNUSED)
 
       /* Game logic */
 
-      /* Give computer some slack until next frame */
-      wait_for_next_frame();
+      /* Cut computer some slack until next frame (unless saving screenshots) */
+      if (!opt.save) {
+         wait_for_next_frame();
+      }
    }
 
    cleanup();

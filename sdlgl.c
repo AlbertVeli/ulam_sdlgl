@@ -21,15 +21,12 @@
 /* storage for one texture  */
 GLuint texture[1];
 
-/* Set to 1 to save bitmap for each frame */
-int save_screenshots = 0;
-
 /* Screenshot pixel data */
 static GLubyte *ssdata = NULL;
 
 
 /* From lesson09 NeHe OpenGL tutorial */
-static SDL_Surface *load_bitmap(char *filename)
+static SDL_Surface *load_bitmap(const char *filename)
 {
    Uint8 *rowhi, *rowlo;
    Uint8 *tmpbuf, tmpch;
@@ -72,11 +69,11 @@ static SDL_Surface *load_bitmap(char *filename)
 
 
 /* From lesson09 NeHe OpenGL tutorial */
-static void load_textures(void)
+static void load_textures(const char *filename)
 {
    SDL_Surface *image1;
 
-   image1 = load_bitmap("Star.bmp");
+   image1 = load_bitmap(filename);
    if (!image1) {
       SDL_Quit();
       exit(EXIT_FAILURE);
@@ -91,15 +88,20 @@ static void load_textures(void)
    /* 2d texture, level of detail 0 (normal), 3 components (red, green, blue), x size from image, y size from image, */
    /* border 0 (normal), rgb color data, unsigned byte data, and finally the data itself. */
    glTexImage2D(GL_TEXTURE_2D, 0, 3, image1->w, image1->h, 0, GL_RGB, GL_UNSIGNED_BYTE, image1->pixels);
+   /* Valgrind wants us to free here, so lets do it.
+    * (Does glTexImage2D copy the pixel data?)
+    */
    SDL_FreeSurface(image1);
-};
+}
 
 
 /* Partly from lesson09 NeHe OpenGL tutorial */
-static void init_gl(int w, int h)
+static void init_gl(int w, int h, const char *filename)
 {
    glViewport(0, 0, w, h);
-   load_textures();
+   if (filename) {
+      load_textures(filename);
+   }
    glEnable(GL_TEXTURE_2D);
    glClearColor(0, 0, 0, 0);     /* Clear bg to black */
    glClearDepth(1.0);
@@ -117,7 +119,7 @@ static void init_gl(int w, int h)
 }
 
 
-void init_sdlgl(int w, int h, int fullscreen, const char *title)
+void init_sdlgl(int w, int h, int fullscreen, const char *filename, const char *title)
 {
    Uint32 flags;
 
@@ -139,7 +141,7 @@ void init_sdlgl(int w, int h, int fullscreen, const char *title)
    /* title bar */
    SDL_WM_SetCaption(title, NULL);
 
-   init_gl(w, h);
+   init_gl(w, h, filename);
 }
 
 
