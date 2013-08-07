@@ -67,10 +67,19 @@ int quit = 0;
 float zoom = -5;
 
 /* Colors for composites/primes */
+
+#define COLOR_COMPOSITES 1
+#ifdef COLOR_COMPOSITES
+#define NUM_COLORS 256 /* Comp, Prime */
+GLubyte r[NUM_COLORS] = { 64 };
+GLubyte g[NUM_COLORS] = { 0 };
+GLubyte b[NUM_COLORS] = { 255 };
+#else
 #define NUM_COLORS 2 /* Comp, Prime */
 GLubyte r[NUM_COLORS] = { 32, 64 };
 GLubyte g[NUM_COLORS] = { 32, 0 };
 GLubyte b[NUM_COLORS] = { 32, 255 };
+#endif
 
 /* Set to 1 to save bitmap for each frame */
 int save_screenshots = 0;
@@ -184,7 +193,25 @@ static void init_everything(void)
    Uint32 flags;
 
    printf("Initializing primes, this may take a while...\n");
+
+#ifdef COLOR_COMPOSITES
+   {
+      int i, c;
+      for (i = 1; i < 256; i++) {
+         c = 16 + i * 8;
+         if (c > 255) {
+            c = 255;
+         }
+         r[i] = c;
+         g[i] = c;
+         b[i] = c;
+      }
+   }
+   init_prime_composites();
+#else
    init_primes();
+#endif
+
    printf("Done\n");
 
    /* Run cleanup() at exit */
@@ -294,7 +321,7 @@ static void save_screenshot(Uint32 num)
 /* Draw one frame */
 static void draw_scene(void)
 {
-   int isprime;
+   int composite;
    int state = 0;
    int curr_count = 0;
    int counts = 1;
@@ -330,7 +357,7 @@ static void draw_scene(void)
    p = &primes[1];
    for (i = 1; i < drawnum; i++) {
 
-      isprime = *p++;
+      composite = *p++;
 
       /* Draw stars in spiral */
       switch (state) {
@@ -378,7 +405,7 @@ static void draw_scene(void)
       }
 
       /* Draw one star */
-      glColor4ub(r[isprime], g[isprime], b[isprime], 255);
+      glColor4ub(r[composite], g[composite], b[composite], 255);
       glBegin(GL_QUADS);
       glTexCoord2f(0, 0); glVertex3f(-1, -1,  0);
       glTexCoord2f(1, 0); glVertex3f( 1, -1,  0);
