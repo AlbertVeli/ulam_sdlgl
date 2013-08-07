@@ -1,6 +1,32 @@
 Draw Ulam Spiral using OpenGL + SDL
 
-See http://en.wikipedia.org/wiki/Ulam_spiral
+The Ulam spiral is a method of visualizing the prime numbers, that
+reveals the apparent tendency of certain quadratic polynomials to
+generate unusually large numbers of primes. It was discovered by the
+mathematician Stanislaw Ulam in 1963, while he was doodling during the
+presentation of a "long and very boring paper" at a scientific
+meeting.
+
+Read more: http://en.wikipedia.org/wiki/Ulam_spiral
+
+Rendered video: https://www.youtube.com/watch?v=7ZGqOF_6zso
+
+The video was rendered by first setting save_screenshots = 1 in the
+source code and then using ffmpeg to assemble the screenshots into a
+video file:
+
+ffmpeg -f image2 -i "s%05d.bmp" -c:v prores -an -r 30 ulam.mov
+
+My video editor prefers the prores codec, but you can use any video
+codec ffmpeg supports, run ffmpeg -encoders to list available codecs
+for video encoding.
+
+The SDL OpenGL intialization and texture loading comes from NeHe
+OpenGL lesson09 (by Jeff Molofee '99, ported to SDL by Sam Latinga
+'2000).
+
+List of primes are calculated at startup, before OpenGL
+initialization.
 
 
 Prickle-Prickle, the 73rd day of Confusion in the YOLD 3179
