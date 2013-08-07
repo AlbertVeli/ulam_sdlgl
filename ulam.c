@@ -86,14 +86,25 @@ static int is_prime(Uint32 num)
 {
    Uint32 i;
    Uint8 *p;
+   Uint32 limit;
 
    /* Quickly sort out even numbers */
    if ((num & 1) == 0) {
       return 0;
    }
 
-   /* Check if divisible by primes we have so far */
-   for (i = 3, p = &primes[3]; i < curr_prime_ix; i += 2, p += 2) {
+   /* Check if divisible by primes we have so far.
+    *
+    * If num is composite, one of the composites muste be less than
+    * square root of num.  Only need to loop up to square root.
+    *
+    * For now, just loop to half (which is always bigger than square
+    * root of num) so we don't have to do the expensive square root
+    * calculation. This could be optimized so square root is
+    * calculated if num is bigger than some limit.
+    */
+   limit = (num >> 1) + 1;
+   for (i = 3, p = &primes[3]; i < limit; i += 2, p += 2) {
       if ((*p) && ((num % i) == 0)) {
          /* Not a prime */
          return 0;
