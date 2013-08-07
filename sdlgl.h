@@ -18,6 +18,6 @@ extern GLuint texture[];
 extern void init_sdlgl(int w, int h, int fullscreen, const char *filename, const char *title);
 extern void cleanup_sdlgl(void);
 extern void save_screenshot(int num, int w, int h);
-
+extern void wait_for_next_frame(void);
 
 #endif /* __SDLGL_H */

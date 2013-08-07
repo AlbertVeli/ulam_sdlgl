@@ -1,7 +1,10 @@
 # (k) ALL RIGHTS REVERSED - Reprint what you like
 
-eXe = ulam
-OBJS = $(eXe).o primes.o sdlgl.o
+X_ULAM = ulam
+OBJS_ULAM = $(X_ULAM).o primes.o sdlgl.o
+
+X_KOCH = koch
+OBJS_KOCH = $(X_KOCH).o sdlgl.o
 
 # Uncomment line below to enable debug build
 #DEBUG = yes
@@ -29,10 +32,15 @@ SDL_LIB = $(shell sdl-config --libs)
 CFLAGS = $(WFLAGS) $(DBGFLAGS) $(SDL_INC) $(OPENGL_INC)
 LIBS = $(SDL_LIB) $(OPENGL_LIB)
 
-$(eXe): $(OBJS)
-	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+all: $(X_KOCH) $(X_ULAM)
+
+$(X_KOCH): $(OBJS_KOCH)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS_KOCH) $(LIBS)
+
+$(X_ULAM): $(OBJS_ULAM)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS_ULAM) $(LIBS)
 
 .PHONY: clean
 
 clean:
-	rm -f $(eXe) $(OBJS) *~
+	rm -f $(X_ULAM) $(OBJS_ULAM) $(X_KOCH) $(OBJS_KOCH) *~

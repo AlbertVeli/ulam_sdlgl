@@ -177,6 +177,25 @@ void save_screenshot(int num, int w, int h)
 }
 
 
+void wait_for_next_frame(void)
+{
+   static Uint32 next = 0;
+   Uint32 curr;
+   int delay;
+
+   if (next != 0) {
+      /* Not first, wait for next frame */
+      curr = SDL_GetTicks();
+      delay = next - curr;
+      if (delay > 0) {
+         /* printf("%f\n", zoom); */
+         SDL_Delay(delay);
+      }
+   }
+   next = SDL_GetTicks() + (1000 / (float)FPS);
+}
+
+
 /**
  * Local Variables:
  * mode: c
