@@ -9,7 +9,7 @@ meeting.
 
 Read more: http://en.wikipedia.org/wiki/Ulam_spiral
 
-Rendered video: https://www.youtube.com/watch?v=7ZGqOF_6zso
+Rendered video: http://www.youtube.com/watch?v=z397rMWHV0g
 
 The video was rendered by first setting save_screenshots = 1 in the
 source code and then using ffmpeg to assemble the screenshots into a
