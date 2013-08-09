@@ -54,19 +54,19 @@ enum lsys_action { A_NULL,    /* No action, symbol only */
                    A_MINUS    /* Rotate -angle degrees */
 };
 
-struct lsys_symbol {
-   char symbol;
-   enum lsys_action action;
-};
+/* struct lsys_symbol { */
+/*    char symbol; */
+/*    enum lsys_action action; */
+/* }; */
 
 struct lsys_rule {
-   char left;   /* Left side of the rule */
+   char symbol;  /* Symbol (left side of rule) */
+   enum lsys_action action;
    char *right; /* Right side */
    int rsz;     /* Size of right side (to simplify expansion) */
 };
 
 #define MAX_RULES 5
-#define MAX_SYMBOLS 5
 struct lsystem {
    int maxlevel;
    int reverse_angle;
@@ -78,131 +78,106 @@ struct lsystem {
    float init_len;
    float len_divisor;
    char *axiom;
-   int num_rules;
-   struct lsys_rule rules[MAX_RULES];
    int num_symbols;
-   struct lsys_symbol symbols[MAX_SYMBOLS];
+   struct lsys_rule rules[MAX_RULES];
 };
 
 /* Sierpinski L-system */
+#define A_SIERP "B-A-B"
+#define B_SIERP "A+B+A"
 struct lsystem sierpinski = {
    14, 1, 60.0, 0.0, 0.0, -1.5, -1.33, 3.0, 2.0,
-   "A",     /* Axiom */
-   4, {     /* Rules for expansion */
-      { 'A', "B-A-B", sizeof("B-A-B") - 1 },
-      { 'B', "A+B+A", sizeof("A+B+A") - 1 },
-      { '+', "+", 1 },
-      { '-', "-", 1 }
-   },
-   4, {     /* Symbol actions (for drawing) */
-      { 'A', A_FORWARD },
-      { 'B', A_FORWARD },
-      { '+', A_PLUS },
-      { '-', A_MINUS }
+   "A",  /* Axiom */
+   4,    /* Number of rules/symbols */
+   {  /* Sym Action     Expansion Size of expansion */
+      { 'A', A_FORWARD, A_SIERP, sizeof(A_SIERP) - 1 },
+      { 'B', A_FORWARD, B_SIERP, sizeof(B_SIERP) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
    }
 };
 
 /* Dragon curve */
+#define L_DRAGON "l+rF+"
+#define R_DRAGON "-Fl-r"
 struct lsystem dragon = {
    19, 0, 90.0, -45.0, 0.0, -1.0, 0.0, 2.0, 1.414,
-   "Fl",    /* Axiom */
-   5, {     /* Rules for expansion */
-      { 'F', "F", 1 },
-      { 'l', "l+rF+", sizeof("l+rF+") - 1 },
-      { 'r', "-Fl-r", sizeof("-Fl-r") - 1 },
-      { '+', "+", 1 },
-      { '-', "-", 1 }
-   },
-   5, {     /* Symbol actions (for drawing) */
-      { 'F', A_FORWARD },
-      { 'l', A_NULL },
-      { 'r', A_NULL },
-      { '+', A_PLUS },
-      { '-', A_MINUS }
+   "Fl",
+   5,
+   {
+      { 'F', A_FORWARD, "F", 1 },
+      { 'l', A_NULL, L_DRAGON, sizeof(L_DRAGON) - 1 },
+      { 'r', A_NULL, R_DRAGON, sizeof(R_DRAGON) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
    }
 };
 
 /* von Koch snowflake */
+#define F_KOCH "F+F--F+F"
 struct lsystem koch = {
    10, 0, 60.0, 0.0, 0.0, -1.5, 0.85, 3.0, 3.0,
-   "F--F--F",     /* Axiom */
-   3, {     /* Rules for expansion */
-      { 'F', "F+F--F+F", sizeof("F+F--F+F") - 1 },
-      { '+', "+", 1 },
-      { '-', "-", 1 }
-   },
-   3, {     /* Symbol actions (for drawing) */
-      { 'F', A_FORWARD },
-      { '+', A_PLUS },
-      { '-', A_MINUS }
+   "F--F--F",
+   3,
+   {
+      { 'F', A_FORWARD, F_KOCH, sizeof(F_KOCH) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
    }
 };
 
 /* Quadratic modification of von Koch snowflake */
+#define F_QKOCHS "F+F-F-F+F"
 struct lsystem quad_koch_snow = {
    8, 0, 90.0, 0.0, -90.0, -1.5, -0.66, 3.0, 3.0,
-   "+F",     /* Axiom */
-   3, {     /* Rules for expansion */
-      { 'F', "F+F-F-F+F", sizeof("F+F-F-F+F") - 1 },
-      { '+', "+", 1 },
-      { '-', "-", 1 }
-   },
-   3, {     /* Symbol actions (for drawing) */
-      { 'F', A_FORWARD },
-      { '+', A_PLUS },
-      { '-', A_MINUS }
+   "+F",
+   3,
+   {
+      { 'F', A_FORWARD, F_QKOCHS, sizeof(F_QKOCHS) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
    }
 };
 
 /* Quadratic von Koch island */
+#define F_QKOCH "F+FF-FF-F-F+F+FF-F-F+F+FF+FF-F"
 struct lsystem quad_koch = {
    5, 0, 90.0, 0.0, 0.0, -1, 1, 2.0, 6.0,
-   "F-F-F-F",  /* Axiom */
-   3, {        /* Rules for expansion */
-      { 'F', "F+FF-FF-F-F+F+FF-F-F+F+FF+FF-F", sizeof("F+FF-FF-F-F+F+FF-F-F+F+FF+FF-F") - 1 },
-      { '+', "+", 1 },
-      { '-', "-", 1 }
-   },
-   3, {     /* Symbol actions (for drawing) */
-      { 'F', A_FORWARD },
-      { '+', A_PLUS },
-      { '-', A_MINUS }
+   "F-F-F-F",
+   3,
+   {
+      { 'F',A_FORWARD, F_QKOCH, sizeof(F_QKOCH) - 1 },
+      { '+',A_PLUS, "+", 1 },
+      { '-',A_MINUS, "-", 1 }
    }
 };
 
 /* Hexagonal Gosper */
+#define X_HEXAG "X+YF++YF-FX--FXFX-YF+"
+#define Y_HEXAG "-FX+YFYF++YF+FX--FX-Y"
 struct lsystem hexa_gosper = {
    11, 0, 60.0, -19.3, 0.0, -1.5, -1.0, 3.0, 2.65,
-   "XF",    /* Axiom */
-   5, {     /* Rules for expansion */
-      { 'F', "F", 1 },
-      { 'X', "X+YF++YF-FX--FXFX-YF+", sizeof("X+YF++YF-FX--FXFX-YF+") - 1 },
-      { 'Y', "-FX+YFYF++YF+FX--FX-Y", sizeof("-FX+YFYF++YF+FX--FX-Y") - 1 },
-      { '+', "+", 1 },
-      { '-', "-", 1 }
-   },
-   5, {     /* Symbol actions (for drawing) */
-      { 'F', A_FORWARD },
-      { 'X', A_NULL },
-      { 'Y', A_NULL },
-      { '+', A_PLUS },
-      { '-', A_MINUS }
+   "XF",
+   5,
+   {
+      { 'F', A_FORWARD, "F", 1 },
+      { 'X', A_NULL, X_HEXAG, sizeof(X_HEXAG) - 1 },
+      { 'Y', A_NULL, Y_HEXAG, sizeof(Y_HEXAG) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
    }
 };
 
 /* Sierpinski square */
+#define F_QSIERP "FF-F-F-F-FF"
 struct lsystem quad_sierpinski = {
    7, 0, 90.0, 0.0, 0.0, -1, 1, 2.0, 3.0,
    "F-F-F-F",  /* Axiom */
-   3, {        /* Rules for expansion */
-      { 'F', "FF-F-F-F-FF", sizeof("FF-F-F-F-FF") - 1 },
-      { '+', "+", 1 },
-      { '-', "-", 1 }
-   },
-   3, {     /* Symbol actions (for drawing) */
-      { 'F', A_FORWARD },
-      { '+', A_PLUS },
-      { '-', A_MINUS }
+   3,
+   {
+      { 'F', A_FORWARD, F_QSIERP, sizeof(F_QSIERP) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
    }
 };
 
@@ -222,12 +197,12 @@ static void expand_lindenmayer(struct lsystem *lsys)
 
    while (*ap) {
       /* Lookup rule */
-      for(i = 0; i < lsys->num_rules; i++) {
-         if (lsys->rules[i].left == *ap) {
+      for(i = 0; i < lsys->num_symbols; i++) {
+         if (lsys->rules[i].symbol == *ap) {
             break;
          }
       }
-      if (i == lsys->num_rules) {
+      if (i == lsys->num_symbols) {
          fprintf(stderr, "Error: expansion failed for token '%c', giving up\n", *ap);
          pattern_a[0] = 0;
          pattern_b[0] = 0;
@@ -288,7 +263,7 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
    while (*p) {
       /* Lookup action for *p */
       for (i = 0; i < lsys->num_symbols; i++) {
-         if (lsys->symbols[i].symbol == *p) {
+         if (lsys->rules[i].symbol == *p) {
             break;
          }
       }
@@ -297,7 +272,7 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
          fprintf(stderr, "Warning: lookup failed for symbol '%c'\n", *p);
       } else {
          /* Go */
-         switch (lsys->symbols[i].action) {
+         switch (lsys->rules[i].action) {
 
          case A_FORWARD: /* Move turtle forward (draw) */
             rad = 0.0174532925 * angle;  /* radians (XXX: sin/cos could be precalculated) */
@@ -329,7 +304,7 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
             break;
 
          default:
-            fprintf(stderr, "Action %d not implemented\n", lsys->symbols[i].action);
+            fprintf(stderr, "Action %d not implemented\n", lsys->rules[i].action);
             break;
          }
       }
