@@ -1,8 +1,9 @@
 /* (k) ALL RIGHTS REVERSED - Reprint what you like
  *
- * von Koch / Sierpinski curves
+ * Draw von Koch / Sierpinski curves using recursion.
  *
- * Hard-coded. TODO: translate to Lindenmayer systems
+ * See ../lindenmayer.c for faster methods to draw
+ * these fractals using Lindenmayer L-systems.
  *
  *
  * Prickle-Prickle, the 73rd day of Confusion in the YOLD 3179

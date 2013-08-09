@@ -1,34 +1,24 @@
-Draw Ulam Spiral using OpenGL + SDL
+Draw Lindenmayer systems using SDL + OpenGL
 
-The Ulam spiral is a method of visualizing the prime numbers, that
-reveals the apparent tendency of certain quadratic polynomials to
-generate unusually large numbers of primes. It was discovered by the
-mathematician Stanislaw Ulam in 1963, while he was doodling during the
-presentation of a "long and very boring paper" at a scientific
-meeting.
+A Lindenmayer system (or L-system) is a parallel rewriting system and
+a type of formal grammar. Here it is used to generate self-similar
+fractals like the:
 
-Read more: http://en.wikipedia.org/wiki/Ulam_spiral
+* Sierpinski triangle
+* Sierpinski square
+* von Koch snowflake
+* von Koch island
+* Dragon curve
+* Gosper curves
 
-Rendered video: http://www.youtube.com/watch?v=z397rMWHV0g
+and more... see: http://en.wikipedia.org/wiki/L-system
 
-The video was rendered by first setting save_screenshots = 1 in the
-source code and then using ffmpeg to assemble the screenshots into a
-video file:
-
-ffmpeg -f image2 -i "s%05d.bmp" -c:v prores -an -r 30 ulam.mov
-
-My video editor prefers the prores codec, but you can use any video
-codec ffmpeg supports, run ffmpeg -encoders to list available codecs
-for video encoding.
-
-The SDL OpenGL intialization and texture loading comes from NeHe
-OpenGL lesson09 (by Jeff Molofee '99, ported to SDL by Sam Latinga
-'2000).
-
-List of primes are calculated at startup, before OpenGL
-initialization.
+The subdirectory ulam contains a program that uses the same OpenGL
+routines to draw an Ulam spiral (a method of visualizing prime
+numbers) and the recursive subdirectory contains a program that draws
+some of these fractals using recursive methods (much slower).
 
 
-Prickle-Prickle, the 73rd day of Confusion in the YOLD 3179
+Sweetmorn, the 2nd day of Bureaucracy in the YOLD 3179
 
 Albert Veli
