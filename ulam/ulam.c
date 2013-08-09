@@ -38,7 +38,7 @@
 #include <unistd.h>
 
 #include "primes.h"
-#include "sdlgl.h"
+#include "../sdlgl.h"
 
 
 static int quit = 0;

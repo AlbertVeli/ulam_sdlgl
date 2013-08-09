@@ -14,7 +14,7 @@
 #include <math.h>
 #include <SDL.h>
 
-#include "sdlgl.h"
+#include "../sdlgl.h"
 
 
 static int quit = 0;

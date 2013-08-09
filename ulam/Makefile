@@ -1,10 +1,7 @@
 # (k) ALL RIGHTS REVERSED - Reprint what you like
 
-X_LINDENMAYER = lindenmayer
-OBJS_LINDENMAYER = $(X_LINDENMAYER).o sdlgl.o
-
-X_ULAM = ulam/ulam
-X_KOCH = recursive/koch
+X_ULAM = ulam
+OBJS_ULAM = $(X_ULAM).o primes.o ../sdlgl.o
 
 # Uncomment line below to enable debug build
 #DEBUG = yes
@@ -32,20 +29,12 @@ SDL_LIB = $(shell sdl-config --libs)
 CFLAGS = $(WFLAGS) $(DBGFLAGS) $(SDL_INC) $(OPENGL_INC)
 LIBS = $(SDL_LIB) $(OPENGL_LIB)
 
-all: $(X_LINDENMAYER) $(X_KOCH) $(X_ULAM)
+all: $(X_ULAM)
 
-$(X_LINDENMAYER): $(OBJS_LINDENMAYER)
-	$(CC) $(LDFLAGS) -o $@ $(OBJS_LINDENMAYER) $(LIBS)
-
-$(X_KOCH):
-	make -C recursive
-
-$(X_ULAM):
-	make -C ulam
+$(X_ULAM): $(OBJS_ULAM)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS_ULAM) $(LIBS)
 
 .PHONY: clean
 
 clean:
-	rm -f $(X_LINDENMAYER) $(OBJS_LINDENMAYER) *~
-	make -C ulam clean
-	make -C recursive clean
+	rm -f $(X_ULAM) $(OBJS_ULAM) *~
