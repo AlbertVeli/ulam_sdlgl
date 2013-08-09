@@ -11,7 +11,6 @@
  */
 
 #include <stdio.h>
-#include <math.h>
 #include <SDL.h>
 
 #include "sdlgl.h"
@@ -36,6 +35,13 @@ static GLubyte r[NUM_COLORS] = { 255 };
 static GLubyte g[NUM_COLORS] = { 255 };
 static GLubyte b[NUM_COLORS] = { 255 };
 
+/* Sin/cos lookup table */
+#define SINTABSZ 4096
+#define SINTABMASK 0xfff /* 4096 = 12 lsb bits */
+double sintab[SINTABSZ + 1]; /* Add 1 to size (to skip one check in lookup_sin) */
+
+#define lookup_cos(x) (lookup_sin(x + 90.0))
+
 /* 4k * 512 = 2M
  * 2M for pattern_a and 2M for pattern_b = 4Mb in total.
  *
@@ -48,37 +54,34 @@ char *pattern_a = NULL;
 char *pattern_b = NULL;
 double linelen;
 
+/* Turtle actions */
 enum lsys_action { A_NULL,    /* No action, symbol only */
                    A_FORWARD, /* Move turtle forward (draw) */
-                   A_PLUS,    /* Rotate angle degrees */
-                   A_MINUS    /* Rotate -angle degrees */
+                   A_MOVE,    /* Move forward without drawing */
+                   A_PLUS,    /* Rotate angle degrees (turn left) */
+                   A_MINUS    /* Rotate -angle degrees (turn right) */
 };
 
-/* struct lsys_symbol { */
-/*    char symbol; */
-/*    enum lsys_action action; */
-/* }; */
-
 struct lsys_rule {
-   char symbol;  /* Symbol (left side of rule) */
-   enum lsys_action action;
-   char *right; /* Right side */
-   int rsz;     /* Size of right side (to simplify expansion) */
+   char symbol;               /* Symbol (left side of rule) */
+   enum lsys_action action;   /* Turtle action for symbol */
+   char *right;               /* Right side */
+   int rsz;                   /* Size of right side (speeds up expansion) */
 };
 
 #define MAX_RULES 5
 struct lsystem {
-   int maxlevel;
-   int reverse_angle;
-   float angle;
-   float angle_offset;
-   float init_angle;
-   float init_x;
+   int maxlevel;              /* Max level for this L-system */
+   int reverse_angle;         /* Invert angle for odd iterations? */
+   float angle;               /* Turtle turn angle */
+   float angle_offset;        /* Degrees to offset angle for each iteration */
+   float init_angle;          /* Initial turtle angle */
+   float init_x;              /* Initial turtle x/y position */
    float init_y;
-   float init_len;
-   float len_divisor;
-   char *axiom;
-   int num_symbols;
+   float init_len;            /* Initial turtle line length */
+   float len_divisor;         /* Divide length by this divisor each iteration */
+   char *axiom;               /* Axiom = starting rule of first iteration */
+   int num_symbols;           /* Number of rules/symbols in this L-system */
    struct lsys_rule rules[MAX_RULES];
 };
 
@@ -152,6 +155,20 @@ struct lsystem quad_koch = {
    }
 };
 
+/* Quadratic von Koch islands/lakes */
+#define F_ISLAKE "F+f-FF+F+FF+Ff+FF-f+FF-F-FF-Ff-FFF"
+struct lsystem koch_islands_lakes = {
+   5, 0, 90.0, 0.0, 0.0, -1, -1, 2.0, 6.0,
+   "F+F+F+F",
+   4,
+   {
+      { 'F',A_FORWARD, F_ISLAKE, sizeof(F_ISLAKE) - 1 },
+      { 'f',A_MOVE, "ffffff", 6 },
+      { '+',A_PLUS, "+", 1 },
+      { '-',A_MINUS, "-", 1 }
+   }
+};
+
 /* Hexagonal Gosper */
 #define X_HEXAG "X+YF++YF-FX--FXFX-YF+"
 #define Y_HEXAG "-FX+YFYF++YF+FX--FX-Y"
@@ -185,6 +202,57 @@ struct lsystem quad_sierpinski = {
 /* Current L-system */
 static int lsys_num = 0;
 static struct lsystem *current_lsys = NULL;
+
+
+static inline double lookup_sin(double deg)
+{
+   double angle = SINTABSZ * (deg / 360.0);
+   int low = (int)angle;
+   double anglediff = angle - low;
+
+   while(low < 0) {
+     low += SINTABSZ;
+   }
+   if (low >= SINTABSZ) {
+     /* Same as low % SINTABZ */
+     low &= SINTABMASK;
+   }
+
+   return sintab[low] + (anglediff * (sintab[low + 1] - sintab[low]));
+}
+
+
+static void init_sintab(void)
+{
+   int i;
+   double rad;
+
+   sintab[0] = 0;
+
+   for (i = 1; i < SINTABSZ / 4; i++) {
+      /* Translate from 0 - (SINTABSZ - 1) to radians */
+      rad = ((2.0 * 3.14159265358979323846) / (double)SINTABSZ) * (double)i;
+      /* sin(rad) can be approximated with a taylor series */
+      sintab[i] =
+         rad -
+	((rad * rad * rad) / (double)(1 * 2 * 3)) +
+	((rad * rad * rad * rad * rad) / (double)(1 * 2 * 3 * 4 * 5)) -
+	((rad * rad * rad * rad * rad * rad * rad) / (double)(1 * 2 * 3 * 4 * 5 * 6 * 7))
+	+ ((rad * rad * rad * rad * rad * rad * rad * rad * rad) /
+	 (double)(1 * 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9))
+	- ((rad * rad * rad * rad * rad * rad * rad * rad * rad * rad * rad) /
+	 (double)(1 * 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9 * 10 * 11));
+   }
+   sintab[SINTABSZ / 4] = 1.0;
+   for (i = 1; i < SINTABSZ / 4; i++) {
+     sintab[SINTABSZ / 4 + i] = sintab[SINTABSZ / 4 - i];
+   }
+   sintab[SINTABSZ / 2] = 0;
+   for (i = 1; i < SINTABSZ / 2; i++) {
+     sintab[SINTABSZ / 2 + i] = -sintab[SINTABSZ / 2 - i];
+   }
+   sintab[SINTABSZ] = 0;
+}
 
 
 /* Expand pattern_a into pattern_b */
@@ -250,7 +318,6 @@ static void compile_lindenmayer_pattern(struct lsystem *lsys, int n)
 static void draw_lindenmayer_system(struct lsystem *lsys)
 {
    double angle;
-   double rad;
    float new_x;
    float new_y;
    float turtle_x = lsys->init_x;
@@ -275,11 +342,17 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
          switch (lsys->rules[i].action) {
 
          case A_FORWARD: /* Move turtle forward (draw) */
-            rad = 0.0174532925 * angle;  /* radians (XXX: sin/cos could be precalculated) */
-            new_x = turtle_x + linelen * cos(rad);
-            new_y = turtle_y + linelen * sin(rad);
+            new_x = turtle_x + linelen * lookup_cos(angle);
+            new_y = turtle_y + linelen * lookup_sin(angle);
             glVertex2f(turtle_x, turtle_y);
             glVertex2f(new_x, new_y);
+            turtle_x = new_x;
+            turtle_y = new_y;
+            break;
+
+         case A_MOVE:    /* Move forward without drawing */
+            new_x = turtle_x + linelen * lookup_cos(angle);
+            new_y = turtle_y + linelen * lookup_sin(angle);
             turtle_x = new_x;
             turtle_y = new_y;
             break;
@@ -345,6 +418,11 @@ static void set_lsys(int num)
       current_lsys = &quad_sierpinski;
       break;
 
+   case 8:
+      current_lsys = &koch_islands_lakes;
+      break;
+
+
    default:
       fprintf(stderr, "Warning: no L-system selected\n");
       pattern_a[0] = 0;
@@ -404,6 +482,7 @@ static void init_everything(void)
    atexit(cleanup);
 
    init_sdlgl(720, 576, 0, NULL, "Lindenmayer system");
+   init_sintab();
    init_linden();
 }
 
@@ -437,6 +516,7 @@ static void check_events(void)
          case SDLK_5:
          case SDLK_6:
          case SDLK_7:
+         case SDLK_8:
             set_lsys(event.key.keysym.sym - SDLK_1 + 1);
             break;
 
