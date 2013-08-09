@@ -43,9 +43,14 @@ $(X_KOCH):
 $(X_ULAM):
 	make -C ulam
 
-.PHONY: clean
+.PHONY: clean check
+
+check:
+	clang --analyze $(CFLAGS) $(OBJS_LINDENMAYER:.o=.c)
+	make -C ulam check
+	make -C recursive check
 
 clean:
-	rm -f $(X_LINDENMAYER) $(OBJS_LINDENMAYER) *~
+	rm -f $(X_LINDENMAYER) $(OBJS_LINDENMAYER) *.plist *~
 	make -C ulam clean
 	make -C recursive clean

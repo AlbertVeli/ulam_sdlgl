@@ -34,7 +34,10 @@ all: $(X_ULAM)
 $(X_ULAM): $(OBJS_ULAM)
 	$(CC) $(LDFLAGS) -o $@ $(OBJS_ULAM) $(LIBS)
 
-.PHONY: clean
+.PHONY: clean check
+
+check:
+	clang --analyze $(CFLAGS) $(OBJS_ULAM:.o=.c)
 
 clean:
-	rm -f $(X_ULAM) $(OBJS_ULAM) *~
+	rm -f $(X_ULAM) $(OBJS_ULAM) *.plist *~

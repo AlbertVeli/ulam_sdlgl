@@ -34,7 +34,10 @@ all: $(X_KOCH)
 $(X_KOCH): $(OBJS_KOCH)
 	$(CC) $(LDFLAGS) -o $@ $(OBJS_KOCH) $(LIBS)
 
-.PHONY: clean
+.PHONY: clean check
+
+check:
+	clang --analyze $(CFLAGS) $(OBJS_KOCH:.o=.c)
 
 clean:
-	rm -f $(X_KOCH) $(OBJS_KOCH) *~
+	rm -f $(X_KOCH) $(OBJS_KOCH) *.plist *~
