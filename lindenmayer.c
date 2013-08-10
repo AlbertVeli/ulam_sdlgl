@@ -36,11 +36,10 @@ static GLubyte g[NUM_COLORS] = { 255 };
 static GLubyte b[NUM_COLORS] = { 255 };
 
 /* Sin/cos lookup table */
-#define SINTABSZ 4096
-#define SINTABMASK 0xfff /* 4096 = 12 lsb bits */
+#define SINTABSZ 360
 double sintab[SINTABSZ + 1]; /* Add 1 to size (to skip one check in lookup_sin) */
 
-#define lookup_cos(x) (lookup_sin(x + 90.0))
+#define lookup_cos(x) (lookup_sin(x + 90))
 
 /* 4k * 512 = 2M
  * 2M for pattern_a and 2M for pattern_b = 4Mb in total.
@@ -72,10 +71,10 @@ struct lsys_rule {
 #define MAX_RULES 5
 struct lsystem {
    int maxlevel;              /* Max level for this L-system */
-   int reverse_angle;         /* Invert angle for odd iterations? */
-   float angle;               /* Turtle turn angle */
+   int invert_angle;          /* Invert angle for odd iterations? */
+   int angle;                 /* Turtle turn angle */
    float angle_offset;        /* Degrees to offset angle for each iteration */
-   float init_angle;          /* Initial turtle angle */
+   int init_angle;            /* Initial turtle angle */
    float init_x;              /* Initial turtle x/y position */
    float init_y;
    float init_len;            /* Initial turtle line length */
@@ -89,7 +88,7 @@ struct lsystem {
 #define A_SIERP "B-A-B"
 #define B_SIERP "A+B+A"
 struct lsystem sierpinski = {
-   14, 1, 60.0, 0.0, 0.0, -1.5, -1.33, 3.0, 2.0,
+   14, 1, 60, 0.0, 0, -1.5, -1.33, 3.0, 2.0,
    "A",  /* Axiom */
    4,    /* Number of rules/symbols */
    {  /* Sym Action     Expansion Size of expansion */
@@ -104,7 +103,7 @@ struct lsystem sierpinski = {
 #define L_DRAGON "l+rF+"
 #define R_DRAGON "-Fl-r"
 struct lsystem dragon = {
-   19, 0, 90.0, -45.0, 0.0, -1.0, 0.0, 2.0, 1.414,
+   19, 0, 90, -45.0, 0, -1.0, 0.0, 2.0, 1.414,
    "Fl",
    5,
    {
@@ -119,7 +118,7 @@ struct lsystem dragon = {
 /* von Koch snowflake */
 #define F_KOCH "F+F--F+F"
 struct lsystem koch = {
-   10, 0, 60.0, 0.0, 0.0, -1.5, 0.85, 3.0, 3.0,
+   10, 0, 60, 0.0, 0, -1.5, 0.85, 3.0, 3.0,
    "F--F--F",
    3,
    {
@@ -132,7 +131,7 @@ struct lsystem koch = {
 /* Quadratic modification of von Koch snowflake */
 #define F_QKOCHS "F+F-F-F+F"
 struct lsystem quad_koch_snow = {
-   8, 0, 90.0, 0.0, -90.0, -1.5, -0.66, 3.0, 3.0,
+   8, 0, 90, 0.0, -90, -1.5, -0.66, 3.0, 3.0,
    "+F",
    3,
    {
@@ -145,7 +144,7 @@ struct lsystem quad_koch_snow = {
 /* Quadratic von Koch island */
 #define F_QKOCH "F+FF-FF-F-F+F+FF-F-F+F+FF+FF-F"
 struct lsystem quad_koch = {
-   5, 0, 90.0, 0.0, 0.0, -1, 1, 2.0, 6.0,
+   5, 0, 90, 0.0, 0, -1, 1, 2.0, 6.0,
    "F-F-F-F",
    3,
    {
@@ -158,7 +157,7 @@ struct lsystem quad_koch = {
 /* von Koch island variation */
 #define F_KOCHVAR "F-FF--F-F"
 struct lsystem koch_island_variation = {
-   8, 0, 90.0, 26.6, 0, -1, 1, 2.0, 2.24,
+   8, 0, 90, 26.6, 0, -1, 1, 2.0, 2.24,
    "F-F-F-F",
    3,
    {
@@ -171,7 +170,7 @@ struct lsystem koch_island_variation = {
 /* Quadratic von Koch islands/lakes */
 #define F_ISLAKE "F+f-FF+F+FF+Ff+FF-f+FF-F-FF-Ff-FFF"
 struct lsystem koch_islands_lakes = {
-   5, 0, 90.0, 0.0, 0.0, -1, -1, 2.0, 6.0,
+   5, 0, 90, 0.0, 0, -1, -1, 2.0, 6.0,
    "F+F+F+F",
    4,
    {
@@ -186,7 +185,7 @@ struct lsystem koch_islands_lakes = {
 #define X_HEXAG "X+YF++YF-FX--FXFX-YF+"
 #define Y_HEXAG "-FX+YFYF++YF+FX--FX-Y"
 struct lsystem hexa_gosper = {
-   11, 0, 60.0, -19.3, 0.0, -1.5, -1.0, 3.0, 2.65,
+   11, 0, 60, -19.3, 0, -1.5, -1.0, 3.0, 2.65,
    "XF",
    5,
    {
@@ -201,7 +200,7 @@ struct lsystem hexa_gosper = {
 /* Sierpinski square */
 #define F_QSIERP "FF-F-F-F-FF"
 struct lsystem quad_sierpinski = {
-   7, 0, 90.0, 0.0, 0.0, -1, 1, 2.0, 3.0,
+   7, 0, 90, 0.0, 0, -1, 1, 2.0, 3.0,
    "F-F-F-F",
    3,
    {
@@ -215,7 +214,7 @@ struct lsystem quad_sierpinski = {
 #define L_PEANO "l+F+r-F-l+F+r-F-l-F-r+F+l-F-r-F-l+F+r-F-l-F-r-F-l+F+r+F+l+F+r-F-l+F+r+F+l-F-r+F+l+F+r-F-l+F+r-F-l"
 #define R_PEANO "r-F-l+F+r-F-l+F+r+F+l-F-r+F+l+F+r-F-l+F+r+F+l+F+r-F-l-F-r-F-l+F+r-F-l-F-r+F+l-F-r-F-l+F+r-F-l+F+r"
 struct lsystem peano = {
-   5, 0, 45.0, 0.0, 45.0, -1.5, -1.5, 3.0, 5.0,
+   5, 0, 45, 0.0, 45, -1.5, -1.5, 3.0, 5.0,
    "l",
    5,
    {
@@ -231,7 +230,7 @@ struct lsystem peano = {
 #define L_PEANO2 "lFrFl-F-rFlFr+F+lFrFl"
 #define R_PEANO2 "rFlFr+F+lFrFl-F-rFlFr"
 struct lsystem peano2 = {
-   7, 0, 90.0, 0.0, 90.0, -1.4, -1.5, 3.0, 3.0,
+   7, 0, 90, 0.0, 90, -1.4, -1.5, 3.0, 3.0,
    "l",
    5,
    {
@@ -249,21 +248,17 @@ static int lsys_num = 0;
 static struct lsystem *current_lsys = NULL;
 
 
-static inline double lookup_sin(double deg)
+/* See commit 549297ae50 for double version */
+static inline double lookup_sin(int angle)
 {
-   double angle = SINTABSZ * (deg / 360.0);
-   int low = (int)angle;
-   double anglediff = angle - low;
-
-   while(low < 0) {
-     low += SINTABSZ;
+   while(angle < 0) {
+     angle += SINTABSZ;
    }
-   if (low >= SINTABSZ) {
-     /* Same as low % SINTABZ */
-     low &= SINTABMASK;
+   while(angle >= SINTABSZ) {
+     angle -= SINTABSZ;
    }
 
-   return sintab[low] + (anglediff * (sintab[low + 1] - sintab[low]));
+   return sintab[angle];
 }
 
 
@@ -362,7 +357,7 @@ static void compile_lindenmayer_pattern(struct lsystem *lsys, int n)
 
 static void draw_lindenmayer_system(struct lsystem *lsys)
 {
-   double angle;
+   int angle, turn_angle;
    float new_x;
    float new_y;
    float turtle_x = lsys->init_x;
@@ -371,6 +366,11 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
    int i;
 
    angle = lsys->init_angle + lsys->angle_offset * level;
+   turn_angle = lsys->angle;
+   if (lsys->invert_angle && ((level & 1) == 1)) {
+      turn_angle = -turn_angle;
+   }
+
    p = pattern_b;
    while (*p) {
       /* Lookup action for *p */
@@ -403,19 +403,11 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
             break;
 
          case A_PLUS:    /* Rotate angle degrees */
-            if (lsys->reverse_angle && ((level & 1) == 1)) {
-               angle -= lsys->angle;
-            } else {
-               angle += lsys->angle;
-            }
+            angle += turn_angle;
             break;
 
          case A_MINUS:   /* Rotate -angle degrees */
-            if (lsys->reverse_angle && ((level & 1) == 1)) {
-               angle += lsys->angle;
-            } else {
-               angle -= lsys->angle;
-            }
+            angle -= turn_angle;
             break;
 
          case A_NULL:    /* No action, symbol only */
