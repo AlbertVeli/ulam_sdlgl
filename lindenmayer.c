@@ -1,8 +1,15 @@
 /* (k) ALL RIGHTS REVERSED - Reprint what you like
  *
- * von Koch / Sierpinski curves using Lindenmayer systems
+ * Draw fractals using Lindenmayer systems
  *
- * See: http://en.wikipedia.org/wiki/L-system
+ * http://en.wikipedia.org/wiki/L-system
+ *
+ * Most of the L-system rules are from:
+ *
+ * "The Algorithmic Beauty of Plants"
+ * by Prusinkiewicz and Lindenmayer
+ *
+ * http://algorithmicbotany.org/papers/
  *
  *
  * Setting Orange, the 1st day of Bureaucracy in the YOLD 3179
@@ -38,8 +45,41 @@ static GLubyte b[NUM_COLORS] = { 255 };
 /* Sin/cos lookup table */
 #define SINTABSZ 360
 double sintab[SINTABSZ + 1]; /* Add 1 to size (to skip one check in lookup_sin) */
-
 #define lookup_cos(x) (lookup_sin(x + 90))
+
+#define STACKSZ 4096
+int stack_angle[STACKSZ];
+float stack_x[STACKSZ];
+float stack_y[STACKSZ];
+int sp = 0; /* Stack pointer */
+
+
+static void push(int angle, float x, float y)
+{
+   sp++;
+   if (sp >= STACKSZ) {
+      fprintf(stderr, "Warning: stack overflow\n");
+      sp--;
+      return;
+   }
+   stack_angle[sp] = angle;
+   stack_x[sp] = x;
+   stack_y[sp] = y;
+}
+
+
+static void pop(int *angle, float *x, float *y)
+{
+   if (sp == 0) {
+      fprintf(stderr, "Warning: stack underrun\n");
+      return;
+   }
+   *angle = stack_angle[sp];
+   *x = stack_x[sp];
+   *y = stack_y[sp];
+   sp--;
+}
+
 
 /* 4k * 512 = 2M
  * 2M for pattern_a and 2M for pattern_b = 4Mb in total.
@@ -58,7 +98,9 @@ enum lsys_action { A_NULL,    /* No action, symbol only */
                    A_FORWARD, /* Move turtle forward (draw) */
                    A_MOVE,    /* Move forward without drawing */
                    A_PLUS,    /* Rotate angle degrees (turn left) */
-                   A_MINUS    /* Rotate -angle degrees (turn right) */
+                   A_MINUS,   /* Rotate -angle degrees (turn right) */
+                   A_PUSH,    /* Push position/angle to stack */
+                   A_POP,     /* Pop position/angle from stack */
 };
 
 struct lsys_rule {
@@ -68,7 +110,7 @@ struct lsys_rule {
    int rsz;                   /* Size of right side (speeds up expansion) */
 };
 
-#define MAX_RULES 5
+#define MAX_RULES 10
 struct lsystem {
    int maxlevel;              /* Max level for this L-system */
    int invert_angle;          /* Invert angle for odd iterations? */
@@ -148,9 +190,9 @@ struct lsystem quad_koch = {
    "F-F-F-F",
    3,
    {
-      { 'F',A_FORWARD, F_QKOCH, sizeof(F_QKOCH) - 1 },
-      { '+',A_PLUS, "+", 1 },
-      { '-',A_MINUS, "-", 1 }
+      { 'F', A_FORWARD, F_QKOCH, sizeof(F_QKOCH) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
    }
 };
 
@@ -161,9 +203,9 @@ struct lsystem koch_island_variation = {
    "F-F-F-F",
    3,
    {
-      { 'F',A_FORWARD, F_KOCHVAR, sizeof(F_KOCHVAR) - 1 },
-      { '+',A_PLUS, "+", 1 },
-      { '-',A_MINUS, "-", 1 }
+      { 'F', A_FORWARD, F_KOCHVAR, sizeof(F_KOCHVAR) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
    }
 };
 
@@ -174,10 +216,10 @@ struct lsystem koch_islands_lakes = {
    "F+F+F+F",
    4,
    {
-      { 'F',A_FORWARD, F_ISLAKE, sizeof(F_ISLAKE) - 1 },
-      { 'f',A_MOVE, "ffffff", 6 },
-      { '+',A_PLUS, "+", 1 },
-      { '-',A_MINUS, "-", 1 }
+      { 'F', A_FORWARD, F_ISLAKE, sizeof(F_ISLAKE) - 1 },
+      { 'f', A_MOVE, "ffffff", 6 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
    }
 };
 
@@ -239,6 +281,81 @@ struct lsystem peano2 = {
       { 'r', A_NULL, R_PEANO2, sizeof(R_PEANO2) - 1 },
       { '+', A_PLUS, "+", 1 },
       { '-', A_MINUS, "-", 1 }
+   }
+};
+
+/* Mango kolam */
+#define A_MKOLAM "f-F+Z+F-fA"
+#define Z_MKOLAM "F-FF-F--[--Z]F-FF-F--F-FF-F--"
+struct lsystem mango_kolam = {
+   20, 0, 60, 0.0, 90, 0.0, -2.0, 1.0, 1.2,
+   "A---A",
+   8,
+   {
+      { 'F', A_FORWARD, "F", 1 },
+      { 'f', A_MOVE, "f", 1 },
+      { 'A', A_NULL, A_MKOLAM, sizeof(A_MKOLAM) - 1 },
+      { 'Z', A_NULL, Z_MKOLAM, sizeof(Z_MKOLAM) - 1 },
+      { '[', A_PUSH, "[", 1 },
+      { ']', A_POP, "]", 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
+/* Hexagonal kolam */
+#define X_HKOLAM "[-F+F[Y]+F][+F-F[X]-F]"
+#define Y_HKOLAM "[-F+F[Y]+F][+F-F-F]"
+struct lsystem hexa_kolam = {
+   20, 0, 60, 0.0, 90, 0.0, -2.0, 1.0, 1.15,
+   "X",
+   7,
+   {
+      { 'F', A_FORWARD, "F", 1 },
+      { 'X', A_NULL, X_HKOLAM, sizeof(X_HKOLAM) - 1 },
+      { 'Y', A_NULL, Y_HKOLAM, sizeof(Y_HKOLAM) - 1 },
+      { '[', A_PUSH, "[", 1 },
+      { ']', A_POP, "]", 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
+/* Penrose */
+#define PENROSE_6 "8F++9F----7F[-8F----6F]++"
+#define PENROSE_7 "+8F--9F[---6F--7F]+"
+#define PENROSE_8 "-6F++7F[+++8F++9F]-"
+#define PENROSE_9 "--8F++++6F[+9F++++7F]--7F"
+struct lsystem penrose = {
+   20, 0, 36, 0.0, 0, 0.0, 0.0, 2.0, 1.65,
+   "[7]++[7]++[7]++[7]++[7]",
+   9,
+   {
+      { 'F', A_FORWARD, "", 0 },
+      { '6', A_NULL, PENROSE_6, sizeof(PENROSE_6) - 1 },
+      { '7', A_NULL, PENROSE_7, sizeof(PENROSE_7) - 1 },
+      { '8', A_NULL, PENROSE_8, sizeof(PENROSE_8) - 1 },
+      { '9', A_NULL, PENROSE_9, sizeof(PENROSE_9) - 1 },
+      { '[', A_PUSH, "[", 1 },
+      { ']', A_POP, "]", 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
+/* Plant */
+#define X_PLANT "F-[[X]+X]+F[+FX]-X"
+struct lsystem plant = {
+   10, 0, 23, 0.0, 90, 0.0, -2.0, 1.5, 2.0,
+   "X",
+   6,
+   {
+      { 'F', A_FORWARD, "FF", 2 },
+      { 'X', A_NULL, X_PLANT, sizeof(X_PLANT) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 },
+      { '[', A_PUSH, "[", 1 },
+      { ']', A_POP, "]", 1 }
    }
 };
 
@@ -429,6 +546,14 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
             angle -= turn_angle;
             break;
 
+         case A_PUSH:   /* Push pos/angle to stack */
+            push(angle, turtle_x, turtle_y);
+            break;
+
+         case A_POP:   /* Pop pos/angle from stack */
+            pop(&angle, &turtle_x, &turtle_y);
+            break;
+
          case A_NULL:    /* No action, symbol only */
             break;
 
@@ -442,7 +567,7 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
    }
 }
 
-#define LAST_LSYS 11
+#define LAST_LSYS 15
 static void set_lsys(int num)
 {
    switch (num) {
@@ -459,31 +584,47 @@ static void set_lsys(int num)
       break;
 
    case 4:
-      current_lsys = &quad_koch_snow;
+      current_lsys = &penrose;
       break;
 
    case 5:
-      current_lsys = &quad_koch;
+      current_lsys = &plant;
       break;
 
    case 6:
-      current_lsys = &hexa_gosper;
-      break;
-
-   case 7:
       current_lsys = &quad_sierpinski;
       break;
 
+   case 7:
+      current_lsys = &quad_koch_snow;
+      break;
+
    case 8:
-      current_lsys = &koch_islands_lakes;
+      current_lsys = &peano;
       break;
 
    case 9:
-      current_lsys = &koch_island_variation;
+      current_lsys = &hexa_kolam;
       break;
 
    case 10:
-      current_lsys = &peano;
+      current_lsys = &hexa_gosper;
+      break;
+
+   case 11:
+      current_lsys = &koch_island_variation;
+      break;
+
+   case 12:
+      current_lsys = &koch_islands_lakes;
+      break;
+
+   case 13:
+      current_lsys = &mango_kolam;
+      break;
+
+   case 14:
+      current_lsys = &quad_koch;
       break;
 
    case LAST_LSYS:
@@ -620,7 +761,7 @@ static void check_events(void)
             if (lsys_num > 1) {
                set_lsys(lsys_num - 1);
             } else {
-               fprintf(stderr, "Already at first L-system\n");
+               fprintf(stderr, "At first L-system\n");
             }
             break;
 
@@ -630,7 +771,7 @@ static void check_events(void)
             if (lsys_num < LAST_LSYS) {
                set_lsys(lsys_num + 1);
             } else {
-               fprintf(stderr, "Already at last L-system\n");
+               fprintf(stderr, "At last L-system\n");
             }
             break;
 
@@ -788,18 +929,19 @@ int main(int argc __attribute__ ((unused)), char *argv[] __attribute__ ((unused)
    init_everything();
 
    printf(
-          "L-system\n\n"
+          "KEYS\n\n"
+          "Browse L-systems with o/p\n\n"
           " 1        - Sierpinski triangle\n"
           " 2        - Dragon curve\n"
           " 3        - von Koch snowflake\n"
-          " 4        - Quadratic von Koch snowflake\n"
-          " 5        - Quadratic von Koch island\n"
-          " 6        - Hexagonal Gosper curve\n"
-          " 7        - Quadratic Sierpinski\n"
-          " 8        - Koch islands and lakes\n"
-          " 9        - Koch island variaton\n"
-          " 0        - Peano curve\n"
-          " o/p      - Browse more curves\n\n"
+          " 4        - Penrose\n"
+          " 5        - Tree\n"
+          " 6        - Quadratic Sierpinski\n"
+          " 7        - Quadratic von Koch snowflake\n"
+          " 8        - Peano curve\n"
+          " 9        - Hexagonal kolam\n"
+          " 0        - Hexagonal Gosper curve\n\n"
+          "Browse with o/p for more curves\n\n"
           "RECURSION\n\n"
           " minus, x - decrease recursion level\n"
           " plus, c  - increase recursion level\n\n"
