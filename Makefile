@@ -1,7 +1,7 @@
 # (k) ALL RIGHTS REVERSED - Reprint what you like
 
 X_LINDENMAYER = lindenmayer
-OBJS_LINDENMAYER = $(X_LINDENMAYER).o sdlgl.o
+OBJS_LINDENMAYER = $(X_LINDENMAYER).o lsystems.o sdlgl.o
 
 X_ULAM = ulam/ulam
 X_KOCH = recursive/koch
