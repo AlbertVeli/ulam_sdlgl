@@ -296,7 +296,7 @@ static void init_sintab(void)
 
 
 /* Expand pattern_a into pattern_b */
-static void expand_lindenmayer(struct lsystem *lsys)
+static void expand_lindenmayer(struct lsystem *lsys, int remove_null)
 {
    char *ap = pattern_a;
    char *bp = pattern_b;
@@ -324,9 +324,27 @@ static void expand_lindenmayer(struct lsystem *lsys)
          level--;
          return;
       }
-      memcpy(bp, lsys->rules[i].right, lsys->rules[i].rsz);
-      bp += lsys->rules[i].rsz;
-      count += lsys->rules[i].rsz;
+      if (remove_null) {
+         /* Skip null symbols from expansion if remove_null != 0 */
+         char *sym = lsys->rules[i].right;
+         while (*sym) {
+            /* look up rule number for expansion symbol */
+            for(i = 0; i < lsys->num_symbols; i++) {
+               if (lsys->rules[i].symbol == *sym) {
+                  break;
+               }
+            }
+            if (lsys->rules[i].action != A_NULL) {
+               *bp++ = *sym;
+               count++;
+            }
+            sym++;
+         }
+      } else {
+         memcpy(bp, lsys->rules[i].right, lsys->rules[i].rsz);
+         bp += lsys->rules[i].rsz;
+         count += lsys->rules[i].rsz;
+      }
       ap++;
    }
    *bp = 0;
@@ -349,7 +367,8 @@ static void compile_lindenmayer_pattern(struct lsystem *lsys, int n)
    while (n > 0) {
       /* Copy pattern_b to pattern_a */
       strcpy(pattern_a, pattern_b);
-      expand_lindenmayer(lsys);
+      /* skip A_NULL symbols if n is 1 (last iteration) */
+      expand_lindenmayer(lsys, n == 1);
       n--;
    }
 }
@@ -365,7 +384,7 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
    char *p;
    int i;
 
-   angle = lsys->init_angle + lsys->angle_offset * level;
+   angle = lsys->init_angle + (int)(lsys->angle_offset * (float)level + 0.5);
    turn_angle = lsys->angle;
    if (lsys->invert_angle && ((level & 1) == 1)) {
       turn_angle = -turn_angle;
