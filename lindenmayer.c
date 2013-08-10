@@ -155,6 +155,19 @@ struct lsystem quad_koch = {
    }
 };
 
+/* von Koch island variation */
+#define F_KOCHVAR "F-FF--F-F"
+struct lsystem koch_island_variation = {
+   8, 0, 90.0, 26.6, 0, -1, 1, 2.0, 2.24,
+   "F-F-F-F",
+   3,
+   {
+      { 'F',A_FORWARD, F_KOCHVAR, sizeof(F_KOCHVAR) - 1 },
+      { '+',A_PLUS, "+", 1 },
+      { '-',A_MINUS, "-", 1 }
+   }
+};
+
 /* Quadratic von Koch islands/lakes */
 #define F_ISLAKE "F+f-FF+F+FF+Ff+FF-f+FF-F-FF-Ff-FFF"
 struct lsystem koch_islands_lakes = {
@@ -189,10 +202,42 @@ struct lsystem hexa_gosper = {
 #define F_QSIERP "FF-F-F-F-FF"
 struct lsystem quad_sierpinski = {
    7, 0, 90.0, 0.0, 0.0, -1, 1, 2.0, 3.0,
-   "F-F-F-F",  /* Axiom */
+   "F-F-F-F",
    3,
    {
       { 'F', A_FORWARD, F_QSIERP, sizeof(F_QSIERP) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
+/* Peano */
+#define L_PEANO "l+F+r-F-l+F+r-F-l-F-r+F+l-F-r-F-l+F+r-F-l-F-r-F-l+F+r+F+l+F+r-F-l+F+r+F+l-F-r+F+l+F+r-F-l+F+r-F-l"
+#define R_PEANO "r-F-l+F+r-F-l+F+r+F+l-F-r+F+l+F+r-F-l+F+r+F+l+F+r-F-l-F-r-F-l+F+r-F-l-F-r+F+l-F-r-F-l+F+r-F-l+F+r"
+struct lsystem peano = {
+   5, 0, 45.0, 0.0, 45.0, -1.5, -1.5, 3.0, 5.0,
+   "l",
+   5,
+   {
+      { 'F', A_FORWARD, "F", 1 },
+      { 'l', A_NULL, L_PEANO, sizeof(L_PEANO) - 1 },
+      { 'r', A_NULL, R_PEANO, sizeof(R_PEANO) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
+/* Peano 2 */
+#define L_PEANO2 "lFrFl-F-rFlFr+F+lFrFl"
+#define R_PEANO2 "rFlFr+F+lFrFl-F-rFlFr"
+struct lsystem peano2 = {
+   7, 0, 90.0, 0.0, 90.0, -1.4, -1.5, 3.0, 3.0,
+   "l",
+   5,
+   {
+      { 'F', A_FORWARD, "F", 1 },
+      { 'l', A_NULL, L_PEANO2, sizeof(L_PEANO2) - 1 },
+      { 'r', A_NULL, R_PEANO2, sizeof(R_PEANO2) - 1 },
       { '+', A_PLUS, "+", 1 },
       { '-', A_MINUS, "-", 1 }
    }
@@ -386,7 +431,7 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
    }
 }
 
-
+#define LAST_LSYS 11
 static void set_lsys(int num)
 {
    switch (num) {
@@ -422,13 +467,30 @@ static void set_lsys(int num)
       current_lsys = &koch_islands_lakes;
       break;
 
+   case 9:
+      current_lsys = &koch_island_variation;
+      break;
+
+   case 10:
+      current_lsys = &peano;
+      break;
+
+   case LAST_LSYS:
+      current_lsys = &peano2;
+      break;
 
    default:
-      fprintf(stderr, "Warning: no L-system selected\n");
-      pattern_a[0] = 0;
-      pattern_b[0] = 0;
-      current_lsys = NULL;
-      lsys_num = 0;
+      fprintf(stderr, "L-system out of bounds >:(\n");
+      if (num <= 0) {
+         current_lsys = &sierpinski;
+         lsys_num = 1;
+      } else {
+         /* Remember to change this to the last when adding L-systems */
+         current_lsys = &peano2;
+         lsys_num = LAST_LSYS;
+      }
+      compile_lindenmayer_pattern(current_lsys, level);
+      num = lsys_num;
       break;
    }
 
@@ -517,7 +579,12 @@ static void check_events(void)
          case SDLK_6:
          case SDLK_7:
          case SDLK_8:
+         case SDLK_9:
             set_lsys(event.key.keysym.sym - SDLK_1 + 1);
+            break;
+
+         case SDLK_0:
+            set_lsys(10);
             break;
 
          case SDLK_a:
@@ -536,17 +603,33 @@ static void check_events(void)
             dy = -0.005;
             break;
 
-         case SDLK_LEFT:
          case SDLK_o:
          case SDLK_r: /* dvorak "o" */
+            /* Scroll L-systems down */
+            if (lsys_num > 1) {
+               set_lsys(lsys_num - 1);
+            } else {
+               fprintf(stderr, "Already at first L-system\n");
+            }
+            break;
+
+         case SDLK_p:
+         case SDLK_l: /* dvorak "p" */
+            /* Scroll L-systems up */
+            if (lsys_num < LAST_LSYS) {
+               set_lsys(lsys_num + 1);
+            } else {
+               fprintf(stderr, "Already at last L-system\n");
+            }
+            break;
+
+         case SDLK_LEFT:
             /* Move left */
             xkey = -1;
             dx = -0.005;
             break;
 
          case SDLK_RIGHT:
-         case SDLK_p:
-         case SDLK_l: /* dvorak "p" */
             /* Move right */
             xkey = 1;
             dx = 0.005;
@@ -618,14 +701,10 @@ static void check_events(void)
             break;
 
          case SDLK_LEFT:
-         case SDLK_o:
-         case SDLK_r:
             xkey = 0;
             break;
 
          case SDLK_RIGHT:
-         case SDLK_p:
-         case SDLK_l: /* dvorak "p" */
             xkey = 0;
             break;
 
@@ -647,9 +726,9 @@ static void check_events(void)
       }
    }
 
-   dz += 0.05 * zoomkey;
-   dx += 0.025 * xkey;
-   dy += 0.025 * ykey;
+   dz += 0.05 * (0-zoom/5) * zoomkey;
+   dx += 0.025 * (0-zoom/5) * xkey;
+   dy += 0.025 * (0-zoom/5) * ykey;
 }
 
 
@@ -705,19 +784,23 @@ int main(int argc __attribute__ ((unused)), char *argv[] __attribute__ ((unused)
           " 4        - Quadratic von Koch snowflake\n"
           " 5        - Quadratic von Koch island\n"
           " 6        - Hexagonal Gosper curve\n"
-          " 7        - Quadratic Sierpinski\n\n"
+          " 7        - Quadratic Sierpinski\n"
+          " 8        - Koch islands and lakes\n"
+          " 9        - Koch island variaton\n"
+          " 0        - Peano curve\n"
+          " o/p      - Browse more curves\n\n"
           "RECURSION\n\n"
           " minus, x - decrease recursion level\n"
           " plus, c  - increase recursion level\n\n"
           "CAMERA\n\n"
           " Up       - Zoom in\n"
           " Down     - Zoom out\n"
-          " Left, o  - Move left\n"
-          " Right, p - Move right\n"
+          " Left     - Move left\n"
+          " Right    - Move right\n"
           " a, f     - Move up\n"
           " z, v     - Move down\n"
           " Space    - Reset camera\n\n"
-          " Esc      - Quit\n\n"
+          "QUIT      - Esc\n\n"
           );
 
    /* main loop */
