@@ -328,15 +328,24 @@ struct lsystem plant = {
 };
 
 /* Fern (ormbunke) */
-/* #define A_FERN "F[+@1.18A][-@1.18A]FA" */
-#define A_FERN "F[+A][-A]FA"
+#define X_FERN "F[+A]FY"
+#define Y_FERN "F[-B]FX"
 struct lsystem fern = {
-   40, 0, 45, 0.0, 90, 0.0, -2.0, 1.5, 1.28,
-   "A",
-   6,
+   40, 0, 45, 0.0, 90, 0.0, -2.0, 1, 1.23,
+   "X",
+   15,
    {
-      { 'F', A_FORWARD, "F", 1 },
-      { 'A', A_NULL, A_FERN, sizeof(A_FERN) - 1 },
+      { 'F', A_FORWARD, "@1.18F@0.84746", sizeof("@1.18F@0.84746") - 1 },
+      { 'X', A_NULL, X_FERN, sizeof(X_FERN) - 1 },
+      { 'Y', A_NULL, Y_FERN, sizeof(Y_FERN) - 1 },
+      { 'A', A_NULL, "N", 1 },
+      { 'N', A_NULL, "O", 1 },
+      { 'O', A_NULL, "P", 1 },
+      { 'P', A_NULL, "X", 1 },
+      { 'B', A_NULL, "E", 1 },
+      { 'E', A_NULL, "H", 1 },
+      { 'H', A_NULL, "J", 1 },
+      { 'J', A_NULL, "Y", 1 },
       { '+', A_PLUS, "+", 1 },
       { '-', A_MINUS, "-", 1 },
       { '[', A_PUSH, "[", 1 },
@@ -344,7 +353,7 @@ struct lsystem fern = {
    }
 };
 
-struct lsystem *lsystems[NUM_LSYSTEMS] = {
+static struct lsystem *lsystems[NUM_LSYSTEMS] = {
    &sierpinski,
    &dragon,
    &koch,

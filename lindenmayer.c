@@ -50,6 +50,19 @@ float stack_y[STACKSZ];
 int sp = 0; /* Stack pointer */
 
 
+/* 4k * 512 = 2M
+ * 2M for pattern_a and 2M for pattern_b = 4Mb in total.
+ *
+ * Expand/shrink PATTERN_LEN to fit the memory capabilities of
+ * your computer. 4Mb is enough for about 12 iterations of
+ * Sierpinski.
+ */
+#define PATTERN_LEN (4096 * 512)
+static char *pattern_a = NULL;
+static char *pattern_b = NULL;
+static double linelen;
+
+
 static void push(int angle, float x, float y)
 {
    sp++;
@@ -75,19 +88,6 @@ static void pop(int *angle, float *x, float *y)
    *y = stack_y[sp];
    sp--;
 }
-
-
-/* 4k * 512 = 2M
- * 2M for pattern_a and 2M for pattern_b = 4Mb in total.
- *
- * Expand/shrink PATTERN_LEN to fit the memory capabilities of
- * your computer. 4Mb is enough for about 12 iterations of
- * Sierpinski.
- */
-#define PATTERN_LEN (4096 * 512)
-static char *pattern_a = NULL;
-static char *pattern_b = NULL;
-static double linelen;
 
 
 /* See commit 549297ae50 for double version */
@@ -146,6 +146,35 @@ static void expand_lindenmayer(struct lsystem *lsys, int remove_null)
    int i;
 
    while (*ap) {
+
+      /* Reserved symbols */
+
+      if (*ap == '@') {
+         /* @ is special, must be followed by a float */
+         char *endptr;
+         strtof((ap + 1), &endptr);
+         if (endptr == ap + 1) {
+            fprintf(stderr, "Error: failed to read float after @, giving up\n");
+            pattern_a[0] = 0;
+            pattern_b[0] = 0;
+            return;
+         }
+         if (count + (endptr - (ap + 1)) > PATTERN_LEN - 1) {
+            fprintf(stderr, "Warning: pattern memory full, skipping expansion (@)\n");
+            memcpy(pattern_b, pattern_a, PATTERN_LEN);
+            level--;
+            return;
+         }
+
+         memcpy(bp, ap, (endptr - ap));
+         bp += (endptr - ap);
+         count += (endptr - ap);
+         ap = endptr;
+         continue; /* skip rest of while-loop */
+      }
+
+      /* Normal rules */
+
       /* Lookup rule */
       for(i = 0; i < lsys->num_symbols; i++) {
          if (lsys->rules[i].symbol == *ap) {
@@ -225,6 +254,7 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
    float turtle_y = lsys->init_y;
    char *p;
    int i;
+   float old_linelen = linelen;
 
    angle = lsys->init_angle + (int)(lsys->angle_offset * (float)level + 0.5);
    turn_angle = lsys->angle;
@@ -234,6 +264,26 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
 
    p = pattern_b;
    while (*p) {
+
+      /* Reserved symbols */
+
+      if (*p == '@') {
+         /* @ is special, must be followed by a float */
+         char *endptr;
+         float lenfactor = strtof((p + 1), &endptr);
+         if (endptr == p + 1) {
+            fprintf(stderr, "Error: failed to read float after @, giving up\n");
+            pattern_a[0] = 0;
+            pattern_b[0] = 0;
+            return;
+         }
+         linelen *= lenfactor;
+         p = endptr;
+         continue; /* skip rest of while-loop */
+      }
+
+      /* Normal symbols */
+
       /* Lookup action for *p */
       for (i = 0; i < lsys->num_symbols; i++) {
          if (lsys->rules[i].symbol == *p) {
@@ -290,6 +340,9 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
 
       p++;
    }
+
+   /* Restore linelen */
+   linelen = old_linelen;
 }
 
 static void set_and_compile_lsys(int num)
