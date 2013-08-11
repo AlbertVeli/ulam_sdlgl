@@ -9,6 +9,7 @@ enum lsys_action { A_NULL,    /* No action, symbol only */
                    A_MOVE,    /* Move forward without drawing */
                    A_PLUS,    /* Rotate angle degrees (turn left) */
                    A_MINUS,   /* Rotate -angle degrees (turn right) */
+                   A_PIPE,    /* Turn around (left 180deg) */
                    A_PUSH,    /* Push position/angle to stack */
                    A_POP,     /* Pop position/angle from stack */
 };
@@ -36,7 +37,7 @@ struct lsystem {
    struct lsys_rule rules[MAX_RULES];
 };
 
-#define NUM_LSYSTEMS 27
+#define NUM_LSYSTEMS 28
 extern struct lsystem *current_lsys;
 
 extern int set_lsys(int num);

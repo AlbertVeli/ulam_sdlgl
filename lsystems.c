@@ -95,15 +95,16 @@ struct lsystem quad_koch = {
 };
 
 /* von Koch island variation */
-#define F_KOCHVAR "F-FF--F-F"
+#define F_KOCHVAR "F-FF|F-F"
 struct lsystem koch_island_variation = {
    8, 0, 90, 26.6, 0, -1, 1, 2.0, 2.24,
    "F-F-F-F",
-   3,
+   4,
    {
       { 'F', A_FORWARD, F_KOCHVAR, sizeof(F_KOCHVAR) - 1 },
       { '+', A_PLUS, "+", 1 },
-      { '-', A_MINUS, "-", 1 }
+      { '-', A_MINUS, "-", 1 },
+      { '|', A_PIPE, "|", 1 }
    }
 };
 
@@ -403,19 +404,20 @@ struct lsystem leaf2 = {
 };
 
 /* Sphinx, Martin Gardner's "Penrose Tiles to Trapdoor Ciphers" */
-#define X_SPHINX "+FF-YFF+FF--FFF---X---F--YFFFYFFF---"
-#define Y_SPHINX "-FF+XFF-FF++FFF---Y---F++XFFFXFFF---"
+#define X_SPHINX "+FF-YFF+FF--FFF|X|F--YFFFYFFF|"
+#define Y_SPHINX "-FF+XFF-FF++FFF|Y|F++XFFFXFFF|"
 struct lsystem sphinx = {
    8, 0, 60, 0.0, 0, -2.0, -1.0, 1.4, 2.0,
    "X",
-   6,
+   7,
    {
       { 'F', A_FORWARD, "ff", 2 },
       { 'f', A_FORWARD, "ff", 2 },
       { 'X', A_NULL, X_SPHINX, sizeof(X_SPHINX) - 1 },
       { 'Y', A_NULL, Y_SPHINX, sizeof(Y_SPHINX) - 1 },
       { '+', A_PLUS, "+", 1 },
-      { '-', A_MINUS, "-", 1 }
+      { '-', A_MINUS, "-", 1 },
+      { '|', A_PIPE, "|", 1 }
    }
 };
 
@@ -465,6 +467,27 @@ struct lsystem peanornd = {
    }
 };
 
+/* Dekking's Church */
+#define W_DEKKING "Fw+F-zFw-F+x"
+#define X_DEKKING "Fw+F-z"
+#define Y_DEKKING "|F|y+F-z"
+#define Z_DEKKING "|F|y-F+x|F|y-F+x"
+struct lsystem dekkingschurch = {
+   9, 0, 90, 0.0, 0, -0.5, -0.2, 2.0, 2.0,
+   "wxyz",
+   8,
+   {
+      { 'F', A_FORWARD, "", 0 },
+      { 'w', A_NULL, W_DEKKING, sizeof(W_DEKKING) - 1 },
+      { 'x', A_NULL, X_DEKKING, sizeof(X_DEKKING) - 1 },
+      { 'y', A_NULL, Y_DEKKING, sizeof(Y_DEKKING) - 1 },
+      { 'z', A_NULL, Z_DEKKING, sizeof(Z_DEKKING) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 },
+      { '|', A_PIPE, "|", 1 }
+   }
+};
+
 
 static struct lsystem *lsystems[NUM_LSYSTEMS] = {
    &sierpinski,            /* 0 */
@@ -491,6 +514,7 @@ static struct lsystem *lsystems[NUM_LSYSTEMS] = {
    &hilbert,
    &fern,
    &lace3060,
+   &dekkingschurch,
    &mango_kolam,
    &peanornd,
    &peano2

@@ -31,7 +31,7 @@ static float dy = 0;
 static float dz = 0;
 
 /* Initial expansion level */
-static int level = 2;
+static int level = 3;
 
 #define NUM_COLORS 1
 static GLubyte r[NUM_COLORS] = { 255 };
@@ -321,11 +321,18 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
             angle -= turn_angle;
             break;
 
-         case A_PUSH:   /* Push pos/angle to stack */
+         case A_PIPE:    /* Turn around 180 degrees */
+            angle += 180;
+            while (angle >=360) {
+               angle -= 360;
+            }
+            break;
+
+         case A_PUSH:    /* Push pos/angle to stack */
             push(angle, turtle_x, turtle_y);
             break;
 
-         case A_POP:   /* Pop pos/angle from stack */
+         case A_POP:     /* Pop pos/angle from stack */
             pop(&angle, &turtle_x, &turtle_y);
             break;
 
