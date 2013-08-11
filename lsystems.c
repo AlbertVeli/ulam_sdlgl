@@ -2,19 +2,19 @@
  *
  * http://en.wikipedia.org/wiki/L-system
  *
- * Most of the L-system rules are from:
+ * Most of these L-system come from:
  *
  * "The Algorithmic Beauty of Plants"
  * by Prusinkiewicz and Lindenmayer
  *
  * http://algorithmicbotany.org/papers/
  *
- * Some more were taken from fractint.l, found in the source tree of
- * xfractint (fractint.org) which in turn refers to:
- * - The Fractal Geometry of Nature by Mandelbrot
- * - The Science of Fractal Images by Peitgen, Saupe, Fisher, McGuire, Voss, Barnsley, Devaney, Mandelbrot
+ * Some additional L-systems are from fractint.l, found in the source tree of
+ * xfractint (fractint.org) which in turn mentions:
+ * - The Fractal Geometry of Nature, by Mandelbrot
+ * - The Science of Fractal Images, by Peitgen, Saupe, Fisher, McGuire, Voss, Barnsley, Devaney, Mandelbrot
  * - the Algorithmic Beauty of Plants (see top)
- * - Penrose Tiles to Trapdoor Ciphers by Martin Gardner
+ * - Penrose Tiles to Trapdoor Ciphers, by Martin Gardner
  *
  *
  * Boomtime, the 3rd day of Bureaucracy in the YOLD 3179
@@ -182,11 +182,27 @@ struct lsystem peano2 = {
    }
 };
 
+/* Hilbert */
+#define X_HILBERT "-YF+XFX+FY-"
+#define Y_HILBERT "+XF-YFY-FX+"
+struct lsystem hilbert = {
+   9, 0, 90, 0.0, 0, -1.2, 1.0, 3.0, 2.05,
+   "X",
+   5,
+   {
+      { 'F', A_FORWARD, "F", 1 },
+      { 'X', A_NULL, X_HILBERT, sizeof(X_HILBERT) - 1 },
+      { 'Y', A_NULL, Y_HILBERT, sizeof(Y_HILBERT) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
 /* Mango kolam */
 #define A_MKOLAM "f-F+Z+F-fA"
 #define Z_MKOLAM "F-FF-F--[--Z]F-FF-F--F-FF-F--"
 struct lsystem mango_kolam = {
-   20, 0, 60, 0.0, 90, 0.0, -2.0, 1.0, 1.2,
+   20, 0, 60, 0.0, 90, 0.0, -2.0, 1.0, 1.3,
    "A---A",
    8,
    {
@@ -311,6 +327,19 @@ struct lsystem double_penrose = {
    }
 };
 
+/* Also by Roger Penrose */
+#define F_PENTAPLEX "F++F++F-----F-F++F"
+struct lsystem pentaplexity = {
+   20, 0, 36, 0.0, 0, -1.0, -1.5, 2.0, 2.62,
+   "F++F++F++F++F",
+   3,
+   {
+      { 'F', A_FORWARD, F_PENTAPLEX, sizeof(F_PENTAPLEX) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
 /* Plant */
 #define X_PLANT "F-[[X]+X]+F[+FX]-X"
 struct lsystem plant = {
@@ -327,7 +356,7 @@ struct lsystem plant = {
    }
 };
 
-/* Fern (ormbunke) */
+/* Fern (ormbunke), ABoP, Fig 5.12b p.130 */
 #define X_FERN "F[+A]FY"
 #define Y_FERN "F[-B]FX"
 struct lsystem fern = {
@@ -353,26 +382,117 @@ struct lsystem fern = {
    }
 };
 
+/* Leaf2, ABoP, Fig 5.12a p.130 */
+#define A_LEAF2 "F[+X]FB"
+#define B_LEAF2 "F[-Y]FA"
+struct lsystem leaf2 = {
+   40, 0, 45, 0.0, 90, 0.0, -2.0, 1, 1.36,
+   "A",
+   9,
+   {
+      { 'F', A_FORWARD, "@1.36F@0.735294", sizeof("@1.36F@0.735294") - 1 },
+      { 'A', A_NULL, A_LEAF2, sizeof(A_LEAF2) - 1 },
+      { 'B', A_NULL, B_LEAF2, sizeof(B_LEAF2) - 1 },
+      { 'X', A_NULL, "A", 1 },
+      { 'Y', A_NULL, "B", 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 },
+      { '[', A_PUSH, "[", 1 },
+      { ']', A_POP, "]", 1 }
+   }
+};
+
+/* Sphinx, Martin Gardner's "Penrose Tiles to Trapdoor Ciphers" */
+#define X_SPHINX "+FF-YFF+FF--FFF---X---F--YFFFYFFF---"
+#define Y_SPHINX "-FF+XFF-FF++FFF---Y---F++XFFFXFFF---"
+struct lsystem sphinx = {
+   8, 0, 60, 0.0, 0, -2.0, -1.0, 1.4, 2.0,
+   "X",
+   6,
+   {
+      { 'F', A_FORWARD, "ff", 2 },
+      { 'f', A_FORWARD, "ff", 2 },
+      { 'X', A_NULL, X_SPHINX, sizeof(X_SPHINX) - 1 },
+      { 'Y', A_NULL, Y_SPHINX, sizeof(Y_SPHINX) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
+#define F_LEVY "+F--F+"
+struct lsystem levy = {
+   17, 0, 45, 0.0, 0, -1.0, -1.0, 1.5, 1.42,
+   "+F--F+",
+   3,
+   {
+      { 'F', A_FORWARD, F_LEVY, sizeof(F_LEVY) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
+#define W_LACE "+++x--F--zFx+"
+#define X_LACE "---w++F++yFw-"
+#define Y_LACE "+zFx--F--z+++"
+#define Z_LACE "-yFw++F++y---"
+struct lsystem lace3060 = {
+   11, 0, 30, 0.0, 0, -1.4, -1.0, 1.5, 1.75,
+   "w",
+   7,
+   {
+      { 'F', A_FORWARD, "F", 1 },
+      { 'w', A_NULL, W_LACE, sizeof(W_LACE) - 1 },
+      { 'x', A_NULL, X_LACE, sizeof(X_LACE) - 1 },
+      { 'y', A_NULL, Y_LACE, sizeof(Y_LACE) - 1 },
+      { 'z', A_NULL, Z_LACE, sizeof(Z_LACE) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
+/* Rounded Peano */
+#define X_PEANOR "FX-@0.5FZ@2.0-FX+@0.5FZ@2.0+FX+@0.5FZ@2.0+FX+@0.5FZ@2.0+FX-@0.5FZ@2.0-FX-@0.5FZ@2.0-FX-@0.5FZ@2.0-FX+@0.5FZ@2.0+FX"
+struct lsystem peanornd = {
+   5, 0, 45, 0.0, 0, -2.0, 0.0, 2.0, 3.0,
+   "FX",
+   5,
+   {
+      { 'F', A_FORWARD, "", 0 },
+      { 'X', A_NULL, X_PEANOR, sizeof(X_PEANOR) - 1 },
+      { 'Z', A_NULL, "FZ", 2 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
+
 static struct lsystem *lsystems[NUM_LSYSTEMS] = {
-   &sierpinski,
-   &dragon,
-   &koch,
-   &double_penrose,
-   &plant,
-   &quad_sierpinski,
-   &quad_koch_snow,
-   &peano,
+   &sierpinski,            /* 0 */
+   &dragon,                /* 1 */
+   &koch,                  /* 2 */
+   &double_penrose,        /* 3 */
+   &plant,                 /* 4 */
+   &quad_sierpinski,       /* 5 */
+   &quad_koch_snow,        /* 6 */
+   &leaf2,                 /* 7 */
+   &levy,                  /* 8 */
+   &peano,                 /* 9 */
    &hexa_kolam,
-   &fern,
    &hexa_gosper,
    &koch_island_variation,
    &koch_islands_lakes,
-   &mango_kolam,
-   &quad_koch,
    &penrose1,
    &penrose2,
    &penrose3,
    &penrose4,
+   &pentaplexity,
+   &sphinx,
+   &quad_koch,
+   &hilbert,
+   &fern,
+   &lace3060,
+   &mango_kolam,
+   &peanornd,
    &peano2
 };
 
