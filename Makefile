@@ -15,7 +15,7 @@ else
 DBGFLAGS = -O2 -march=native
 endif
 
-WFLAGS = -W -Wall
+WFLAGS = -W -Wall -Wno-unused-result
 
 MACHINE = $(shell uname -s)
 

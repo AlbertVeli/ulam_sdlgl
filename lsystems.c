@@ -55,6 +55,25 @@ struct lsystem dragon = {
    }
 };
 
+/* Rounded 2-coloured dragon */
+#define X_RDR "FX-@.5FZ@2-FY"
+#define Y_RDR "FX+@.5FZ@2+FY"
+#define Z_RDR "FZ"
+struct lsystem rdragon = {
+   19, 0, 45, 45.0, 40, -1.5, -0.5, 0.8, 1.414,
+   /* "X", */
+   "C0FX-C1FY",
+   6,
+   {
+      { 'F', A_FORWARD, "", 0 },
+      { 'X', A_NULL, X_RDR, sizeof(X_RDR) - 1 },
+      { 'Y', A_NULL, Y_RDR, sizeof(Y_RDR) - 1 },
+      { 'Z', A_NULL, Z_RDR, sizeof(Z_RDR) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
 /* von Koch snowflake */
 #define F_KOCH "F+F--F+F"
 struct lsystem koch = {
@@ -141,7 +160,7 @@ struct lsystem hexa_gosper = {
 /* Sierpinski square */
 #define F_QSIERP "FF-F-F-F-FF"
 struct lsystem quad_sierpinski = {
-   7, 0, 90, 0.0, 0, -1, 1, 2.0, 3.0,
+   5, 0, 90, 0.0, 0, -1, 1, 2.0, 3.0,
    "F-F-F-F",
    3,
    {
@@ -345,7 +364,7 @@ struct lsystem pentaplexity = {
 #define X_PLANT "F-[[X]+X]+F[+FX]-X"
 struct lsystem plant = {
    10, 0, 23, 0.0, 90, 0.0, -2.0, 1.5, 2.0,
-   "X",
+   "C1X", /* Axiom = X, C1 = colour number 1 in palette */
    6,
    {
       { 'F', A_FORWARD, "FF", 2 },
@@ -361,8 +380,8 @@ struct lsystem plant = {
 #define X_FERN "F[+A]FY"
 #define Y_FERN "F[-B]FX"
 struct lsystem fern = {
-   40, 0, 45, 0.0, 90, 0.0, -2.0, 1, 1.23,
-   "X",
+   34, 0, 45, 0.0, 90, 0.0, -2.0, 1, 1.23,
+   "C1X",
    15,
    {
       { 'F', A_FORWARD, "@1.18F@0.84746", sizeof("@1.18F@0.84746") - 1 },
@@ -388,7 +407,7 @@ struct lsystem fern = {
 #define B_LEAF2 "F[-Y]FA"
 struct lsystem leaf2 = {
    40, 0, 45, 0.0, 90, 0.0, -2.0, 1, 1.36,
-   "A",
+   "C1A",
    9,
    {
       { 'F', A_FORWARD, "@1.36F@0.735294", sizeof("@1.36F@0.735294") - 1 },
@@ -424,7 +443,7 @@ struct lsystem sphinx = {
 #define F_LEVY "+F--F+"
 struct lsystem levy = {
    17, 0, 45, 0.0, 0, -1.0, -1.0, 1.5, 1.42,
-   "+F--F+",
+   "+C0F--C1F+", /* Replace with "F" for monocolor */
    3,
    {
       { 'F', A_FORWARD, F_LEVY, sizeof(F_LEVY) - 1 },
@@ -515,6 +534,7 @@ static struct lsystem *lsystems[NUM_LSYSTEMS] = {
    &fern,
    &lace3060,
    &dekkingschurch,
+   &rdragon,
    &mango_kolam,
    &peanornd,
    &peano2

@@ -33,10 +33,10 @@ static float dz = 0;
 /* Initial expansion level */
 static int level = 3;
 
-#define NUM_COLORS 1
-static GLubyte r[NUM_COLORS] = { 255 };
-static GLubyte g[NUM_COLORS] = { 255 };
-static GLubyte b[NUM_COLORS] = { 255 };
+#define NUM_COLORS 3
+static GLubyte r[NUM_COLORS] = { 255, 128, 0x7b };
+static GLubyte g[NUM_COLORS] = { 255, 255, 0x3c };
+static GLubyte b[NUM_COLORS] = { 255, 128, 0x12 };
 
 /* Sin/cos lookup table */
 #define SINTABSZ 360
@@ -149,18 +149,27 @@ static void expand_lindenmayer(struct lsystem *lsys, int remove_null)
 
       /* Reserved symbols */
 
-      if (*ap == '@') {
-         /* @ is special, must be followed by a float */
+      if (*ap == '@' || *ap == 'C') {
+         /* @/C are special, must be followed by a float/int */
          char *endptr;
-         strtof((ap + 1), &endptr);
+         /* Check where float/int ends. Compiler might warn about
+          * unused result of strtof/strtoul, that's ok, we only want
+          * endptr.
+          */
+         if (*ap == '@') {
+            strtof((ap + 1), &endptr);
+         } else {
+            strtoul((ap + 1), &endptr, 10);
+         }
          if (endptr == ap + 1) {
-            fprintf(stderr, "Error: failed to read float after @, giving up\n");
+            fprintf(stderr, "Error: failed to read %s, giving up\n",
+                    *ap == '@' ? "float after @" : "int after C");
             pattern_a[0] = 0;
             pattern_b[0] = 0;
             return;
          }
          if (count + (endptr - (ap + 1)) > PATTERN_LEN - 1) {
-            fprintf(stderr, "Warning: pattern memory full, skipping expansion (@)\n");
+            fprintf(stderr, "Warning: pattern memory full, skipping expansion (%c)\n", *ap);
             memcpy(pattern_b, pattern_a, PATTERN_LEN);
             level--;
             return;
@@ -255,6 +264,10 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
    char *p;
    int i;
    float old_linelen = linelen;
+   int colour;
+
+   colour = 0;
+   glColor4ub(r[colour], g[colour], b[colour], 255);
 
    angle = lsys->init_angle + (int)(lsys->angle_offset * (float)level + 0.5);
    turn_angle = lsys->angle;
@@ -267,17 +280,23 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
 
       /* Reserved symbols */
 
-      if (*p == '@') {
-         /* @ is special, must be followed by a float */
+      if (*p == '@' || *p == 'C') {
+         /* @/C are special, followed by float/int */
          char *endptr;
-         float lenfactor = strtof((p + 1), &endptr);
+         float lenfactor;
+         if (*p == '@') {
+            lenfactor = strtof((p + 1), &endptr);
+            linelen *= lenfactor;
+         } else {
+            colour = strtoul((p + 1), &endptr, 10);
+            glColor4ub(r[colour], g[colour], b[colour], 255);
+         }
          if (endptr == p + 1) {
             fprintf(stderr, "Error: failed to read float after @, giving up\n");
             pattern_a[0] = 0;
             pattern_b[0] = 0;
             return;
          }
-         linelen *= lenfactor;
          p = endptr;
          continue; /* skip rest of while-loop */
       }
@@ -538,6 +557,12 @@ static void check_events(void)
             dy = 0;
             break;
 
+#if 1
+         case SDLK_d:
+            /* Debug pattern_b */
+            printf("%s\n", pattern_b);
+            break;
+#endif
             /* None of the above, do nothing */
          default:
             break;
@@ -603,7 +628,6 @@ static void game_logic(void)
 /* Draw one frame */
 static void draw_scene(void)
 {
-   int colour = 0;
    static Uint32 framecount = 0;
 
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -612,7 +636,6 @@ static void draw_scene(void)
    glLoadIdentity();
    glTranslatef(move_x, move_y, zoom);
 
-   glColor4ub(r[colour], g[colour], b[colour], 255);
    glLineWidth(1.5);
    glBegin(GL_LINES);
 
