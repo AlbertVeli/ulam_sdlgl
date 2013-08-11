@@ -52,9 +52,12 @@ double sintab[SINTABSZ + 1];
 static int stack_angle[STACKSZ];
 static float stack_x[STACKSZ];
 static float stack_y[STACKSZ];
+static double stack_len[STACKSZ];
+static int stack_col[STACKSZ];
 /* static int stack_invert[STACKSZ]; */
 static int sp = 0; /* Stack pointer */
 static int invert = 1;
+static int colour = 0;
 
 
 /* 4k * 512 = 2M
@@ -81,6 +84,8 @@ static void push(int angle, float x, float y)
    stack_angle[sp] = angle;
    stack_x[sp] = x;
    stack_y[sp] = y;
+   stack_len[sp] = linelen;
+   stack_col[sp] = colour;
    /* stack_invert[sp] = invert; */
 }
 
@@ -94,6 +99,11 @@ static void pop(int *angle, float *x, float *y)
    *angle = stack_angle[sp];
    *x = stack_x[sp];
    *y = stack_y[sp];
+   linelen = stack_len[sp];
+   if (colour != stack_col[sp]) {
+      colour = stack_col[sp];
+      glColor4ub(r[colour], g[colour], b[colour], 255);
+   }
    /* invert = stack_invert[sp]; */
    sp--;
 }
@@ -213,7 +223,7 @@ static void expand_lindenmayer(struct lsystem *lsys, int remove_null)
          level--;
          return;
       }
-      if (remove_null) {
+      if (remove_null && (lsys->rules[i].right[0] != '@') && (lsys->rules[i].right[0] != 'C')) {
          /* Skip null symbols from expansion if remove_null != 0 */
          char *sym = lsys->rules[i].right;
          while (*sym) {
@@ -273,7 +283,6 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
    char *p;
    int i;
    float old_linelen = linelen;
-   int colour;
 
    invert = 1;
 

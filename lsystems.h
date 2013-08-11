@@ -38,7 +38,7 @@ struct lsystem {
    struct lsys_rule rules[MAX_RULES];
 };
 
-#define NUM_LSYSTEMS 32
+#define NUM_LSYSTEMS 35
 extern struct lsystem *current_lsys;
 
 extern int set_lsys(int num);
