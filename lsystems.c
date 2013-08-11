@@ -2,19 +2,23 @@
  *
  * http://en.wikipedia.org/wiki/L-system
  *
- * Most of these L-system come from:
- *
- * "The Algorithmic Beauty of Plants"
- * by Prusinkiewicz and Lindenmayer
+ * Rules for most of these L-systems are from
+ * The Algorithmic Beauty of Plants by Prusinkiewicz and Lindenmayer
  *
  * http://algorithmicbotany.org/papers/
  *
- * Some additional L-systems are from fractint.l, found in the source tree of
- * xfractint (fractint.org) which in turn mentions:
+ * Some additional L-systems are from fractint.l, found in the source
+ * tree of xfractint (fractint.org) which in turn mentions:
+ *
  * - The Fractal Geometry of Nature, by Mandelbrot
- * - The Science of Fractal Images, by Peitgen, Saupe, Fisher, McGuire, Voss, Barnsley, Devaney, Mandelbrot
+ * - The Science of Fractal Images, by Peitgen, Saupe, Fisher, McGuire,
+ *                                     Voss, Barnsley, Devaney, Mandelbrot
  * - the Algorithmic Beauty of Plants (see top)
  * - Penrose Tiles to Trapdoor Ciphers, by Martin Gardner
+ *
+ * And a some variations from
+ * http://mathafou.free.fr/themes_en/fractls.html and
+ * http://malsys.cz/
  *
  *
  * Boomtime, the 3rd day of Bureaucracy in the YOLD 3179
@@ -69,6 +73,19 @@ struct lsystem rdragon = {
       { 'X', A_NULL, X_RDR, sizeof(X_RDR) - 1 },
       { 'Y', A_NULL, Y_RDR, sizeof(Y_RDR) - 1 },
       { 'Z', A_NULL, Z_RDR, sizeof(Z_RDR) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
+/* 3-coloured dragon */
+#define F_TDR "F+F-F"
+struct lsystem terdragon = {
+   19, 0, 120, -30.0, -45, -2.1, 0.5, 2.5, 1.73,
+   "C3F+C10F-C6F", /* Use only "F" for monocolor */
+   3,
+   {
+      { 'F', A_FORWARD, F_TDR, sizeof(F_TDR) - 1 },
       { '+', A_PLUS, "+", 1 },
       { '-', A_MINUS, "-", 1 }
    }
@@ -152,6 +169,22 @@ struct lsystem hexa_gosper = {
       { 'F', A_FORWARD, "F", 1 },
       { 'X', A_NULL, X_HEXAG, sizeof(X_HEXAG) - 1 },
       { 'Y', A_NULL, Y_HEXAG, sizeof(Y_HEXAG) - 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
+/* Flowsnake */
+#define L_FLOWS "FL-FR--FR+FL++FLFL+FR-"
+#define R_FLOWS "+FL-FRFR--FR-FL++FL+FR"
+struct lsystem flowsnake = {
+   11, 0, 60, 19.3, 0, -1.0, 1.0, 1.0, 2.65,
+   "C1FL-C5FR--C2FR+C7FL++C17FLC10FL+C3FR-", /* "FL" for monocolor */
+   5,
+   {
+      { 'F', A_FORWARD, "", 0 },
+      { 'L', A_NULL, L_FLOWS, sizeof(L_FLOWS) - 1 },
+      { 'R', A_NULL, R_FLOWS, sizeof(R_FLOWS) - 1 },
       { '+', A_PLUS, "+", 1 },
       { '-', A_MINUS, "-", 1 }
    }
@@ -422,6 +455,20 @@ struct lsystem leaf2 = {
    }
 };
 
+#define X_CESARO "----F!X!++++++++F!X!----"
+struct lsystem cesaro = {
+   16, 1, 35, 0.0, 0, -1.0, -1.0, 1.5, 1.5,
+   "FX",
+   5,
+   {
+      { 'F', A_FORWARD, "", 0 },
+      { 'X', A_NULL, X_CESARO, sizeof(X_CESARO) - 1 },
+      { '!', A_INVERT, "!", 1 },
+      { '+', A_PLUS, "+", 1 },
+      { '-', A_MINUS, "-", 1 }
+   }
+};
+
 /* Sphinx, Martin Gardner's "Penrose Tiles to Trapdoor Ciphers" */
 #define X_SPHINX "+FF-YFF+FF--FFF|X|F--YFFFYFFF|"
 #define Y_SPHINX "-FF+XFF-FF++FFF|Y|F++XFFFXFFF|"
@@ -457,8 +504,11 @@ struct lsystem levy = {
 #define Y_LACE "+zFx--F--z+++"
 #define Z_LACE "-yFw++F++y---"
 struct lsystem lace3060 = {
-   11, 0, 30, 0.0, 0, -1.4, -1.0, 1.5, 1.75,
-   "w",
+   11, 0, 30, 0.0, 0, -1.8, -1.0, 0.33, 1.75,
+   /* "w", for monocolor */
+   "C3+++x--F--zFx+++F+++zFx--F--z+++F+++x--F--zFx--F"
+   "C10--zFx--F--z+++F+++x--F--zFx+++F+++zFx--F--zF"
+   "C6x--F--zFx+++F+++zFx--F--z+++F+++x--F--zFx+",
    7,
    {
       { 'F', A_FORWARD, "F", 1 },
@@ -510,7 +560,7 @@ struct lsystem dekkingschurch = {
 
 static struct lsystem *lsystems[NUM_LSYSTEMS] = {
    &sierpinski,            /* 0 */
-   &dragon,                /* 1 */
+   &terdragon,             /* 1 */
    &koch,                  /* 2 */
    &double_penrose,        /* 3 */
    &plant,                 /* 4 */
@@ -521,6 +571,7 @@ static struct lsystem *lsystems[NUM_LSYSTEMS] = {
    &peano,                 /* 9 */
    &hexa_kolam,
    &hexa_gosper,
+   &flowsnake,
    &koch_island_variation,
    &koch_islands_lakes,
    &penrose1,
@@ -529,12 +580,14 @@ static struct lsystem *lsystems[NUM_LSYSTEMS] = {
    &penrose4,
    &pentaplexity,
    &sphinx,
+   &cesaro,
    &quad_koch,
    &hilbert,
    &fern,
    &lace3060,
    &dekkingschurch,
    &rdragon,
+   &dragon,
    &mango_kolam,
    &peanornd,
    &peano2

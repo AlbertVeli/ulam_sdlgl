@@ -33,21 +33,28 @@ static float dz = 0;
 /* Initial expansion level */
 static int level = 3;
 
-#define NUM_COLORS 3
-static GLubyte r[NUM_COLORS] = { 255, 128, 0x7b };
-static GLubyte g[NUM_COLORS] = { 255, 255, 0x3c };
-static GLubyte b[NUM_COLORS] = { 255, 128, 0x12 };
+/* TODO: Add keys for changing palettes */
+#define NUM_COLORS 20
+/*                                 0    1    2     3   | 4     5     6     7     8     9     10    11  | 12    13    14    15    16    17    18   19
+ *                                     Plant colours   | Shaded                                        | Bright
+ *                               White Green Brwn  DGr | Black Blue  Red   Mgnt  Grn   Cyan  Ylw   Wht | Black Blue  Red   Mgnt  Grn   Cyan  Ylw   Wht */
+static GLubyte r[NUM_COLORS] = { 0xaa, 0x80, 0x7b, 0x00, 0x00, 0x00, 0xaa, 0xaa, 0x00, 0x00, 0xaa, 0xaa, 0x80, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff };
+static GLubyte g[NUM_COLORS] = { 0xaa, 0xff, 0x3c, 0x80, 0x00, 0x00, 0x00, 0x00, 0xaa, 0xaa, 0xaa, 0xaa, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff };
+static GLubyte b[NUM_COLORS] = { 0xaa, 0x80, 0x12, 0x00, 0x00, 0xaa, 0x00, 0xaa, 0x00, 0xaa, 0x00, 0xaa, 0x80, 0xff, 0x00, 0xff, 0x00, 0xff, 0x00, 0xff };
 
 /* Sin/cos lookup table */
 #define SINTABSZ 360
-double sintab[SINTABSZ + 1]; /* Add 1 to size (to skip one check in lookup_sin) */
+double sintab[SINTABSZ + 1];
 #define lookup_cos(x) (lookup_sin(x + 90))
 
+/* Stack (for push/pop) */
 #define STACKSZ 4096
-int stack_angle[STACKSZ];
-float stack_x[STACKSZ];
-float stack_y[STACKSZ];
-int sp = 0; /* Stack pointer */
+static int stack_angle[STACKSZ];
+static float stack_x[STACKSZ];
+static float stack_y[STACKSZ];
+/* static int stack_invert[STACKSZ]; */
+static int sp = 0; /* Stack pointer */
+static int invert = 1;
 
 
 /* 4k * 512 = 2M
@@ -74,6 +81,7 @@ static void push(int angle, float x, float y)
    stack_angle[sp] = angle;
    stack_x[sp] = x;
    stack_y[sp] = y;
+   /* stack_invert[sp] = invert; */
 }
 
 
@@ -86,6 +94,7 @@ static void pop(int *angle, float *x, float *y)
    *angle = stack_angle[sp];
    *x = stack_x[sp];
    *y = stack_y[sp];
+   /* invert = stack_invert[sp]; */
    sp--;
 }
 
@@ -266,6 +275,8 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
    float old_linelen = linelen;
    int colour;
 
+   invert = 1;
+
    colour = 0;
    glColor4ub(r[colour], g[colour], b[colour], 255);
 
@@ -333,11 +344,11 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
             break;
 
          case A_PLUS:    /* Rotate angle degrees */
-            angle += turn_angle;
+            angle += turn_angle * invert;
             break;
 
          case A_MINUS:   /* Rotate -angle degrees */
-            angle -= turn_angle;
+            angle -= turn_angle * invert;
             break;
 
          case A_PIPE:    /* Turn around 180 degrees */
@@ -345,6 +356,10 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
             while (angle >=360) {
                angle -= 360;
             }
+            break;
+
+         case A_INVERT:  /* Reverse +/- */
+            invert *= -1;
             break;
 
          case A_PUSH:    /* Push pos/angle to stack */
