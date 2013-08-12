@@ -626,14 +626,14 @@ static struct lsystem *lsystems[NUM_LSYSTEMS] = {
    &sierpinski,            /* 0 */
    &terdragon,             /* 1 */
    &koch,                  /* 2 */
-   &double_penrose,        /* 3 */
+   &pentacolor,            /* 3 */
    &plant,                 /* 4 */
    &quad_sierpinski,       /* 5 */
    &quad_koch_snow,        /* 6 */
    &leaf2,                 /* 7 */
    &levy,                  /* 8 */
    &peano,                 /* 9 */
-   &pentacolor,
+   &double_penrose,
    &hexa_kolam,
    &hexa_gosper,
    &flowsnake,

@@ -2,14 +2,20 @@ Draw Lindenmayer systems using SDL + OpenGL
 
 A Lindenmayer system (or L-system) is a parallel rewriting system and
 a type of formal grammar. Here it is used to generate self-similar
-fractals like the:
+fractals like:
 
-* Sierpinski triangle
-* Sierpinski square
-* von Koch snowflake
-* von Koch island
-* Dragon curve
+* Sierpinski triangle and square
+* von Koch snowflake and variations
+* Dragon curve and variations (terdragon, double dragon)
+* Penrose tilings (pentagons, kites, darts)
+* Trees, plants
+* Peano curves
 * Gosper curves
+* Kolams
+* Levy curve
+* Hilbert curve
+* Dekking's church
+* Sphinx tiling
 
 and more... see: http://en.wikipedia.org/wiki/L-system
 

@@ -309,6 +309,14 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
             linelen *= lenfactor;
          } else {
             colour = strtoul((p + 1), &endptr, 10);
+            if (colour < 0) {
+               fprintf(stderr, "Warning: read negative colour\n");
+               colour = 0;
+            }
+            if (colour >= NUM_COLORS) {
+               fprintf(stderr, "Warning: colour overflow\n");
+               colour = NUM_COLORS - 1;
+            }
             glColor4ub(r[colour], g[colour], b[colour], 255);
          }
          if (endptr == p + 1) {
@@ -683,9 +691,9 @@ int main(int argc __attribute__ ((unused)), char *argv[] __attribute__ ((unused)
           "KEYS\n\n"
           "Browse L-systems with o/p\n\n"
           " 0        - Sierpinski triangle\n"
-          " 1        - Dragon curve\n"
+          " 1        - Terdragon curve\n"
           " 2        - von Koch snowflake\n"
-          " 3        - Penrose\n"
+          " 3        - Penrose (pentagons, colored)\n"
           " 4        - Plant\n"
           " 5        - Quadratic Sierpinski\n"
           " 6        - Quadratic von Koch snowflake\n"
