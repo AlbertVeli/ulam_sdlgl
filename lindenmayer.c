@@ -57,8 +57,10 @@ static int stack_col[STACKSZ];
 /* static int stack_invert[STACKSZ]; */
 static int sp = 0; /* Stack pointer */
 static int invert = 1;
-static int colour = 0;
 
+static int colour = 0;
+static int show_turtle = 1;
+static int turtle_lines = 0;
 
 /* 4k * 512 = 2M
  * 2M for pattern_a and 2M for pattern_b = 4Mb in total.
@@ -270,6 +272,8 @@ static void compile_lindenmayer_pattern(struct lsystem *lsys, int n)
       expand_lindenmayer(lsys, n == 1);
       n--;
    }
+
+   turtle_lines = 0;
 }
 
 
@@ -283,8 +287,14 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
    char *p;
    int i;
    float old_linelen = linelen;
+   float turtlesize = 0.5;
+   int lines = 0;
 
    invert = 1;
+   sp = 0;
+
+   glBegin(GL_LINES);
+   glLineWidth(1.5);
 
    colour = 0;
    glColor4ub(r[colour], g[colour], b[colour], 255);
@@ -296,7 +306,10 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
    }
 
    p = pattern_b;
-   while (*p) {
+   turtle_lines++;
+
+   /* If show_turtle, then draw one more line than last time, else draw all */
+   while (*p && ((show_turtle == 0) || (lines < turtle_lines))) {
 
       /* Reserved symbols */
 
@@ -397,10 +410,29 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
       }
 
       p++;
+      lines++;
    }
 
    /* Restore linelen */
    linelen = old_linelen;
+
+   glEnd();
+
+   if (show_turtle) {
+      glEnable(GL_TEXTURE_2D);
+      glColor4ub(255, 255, 255, 255);
+      glTranslatef(turtle_x, turtle_y, 0);
+      glRotatef(angle, 0.0f, 0.0f, 1.0f);
+      glBegin(GL_QUADS);
+      glTexCoord2f(0, 0); glVertex3f(-turtlesize, -turtlesize,  0.1);
+      glTexCoord2f(1, 0); glVertex3f(turtlesize, -turtlesize,  0.1);
+      glTexCoord2f(1, 1); glVertex3f(turtlesize, turtlesize,  0.1);
+      glTexCoord2f(0, 1); glVertex3f(-turtlesize, turtlesize,  0.1);
+      glEnd();
+      glRotatef(-angle, 0.0f, 0.0f, 1.0f);
+      glTranslatef(-turtle_x, -turtle_y, 0);
+      glDisable(GL_TEXTURE_2D);
+   }
 }
 
 static void set_and_compile_lsys(int num)
@@ -453,7 +485,7 @@ static void init_everything(void)
    /* Run cleanup() at exit */
    atexit(cleanup);
 
-   init_sdlgl(720, 576, 0, NULL, "Lindenmayer system");
+   init_sdlgl(720, 576, 0, "turtle.bmp", "Lindenmayer system");
    init_sintab();
    init_linden();
 }
@@ -595,6 +627,13 @@ static void check_events(void)
             printf("%s\n", pattern_b);
             break;
 #endif
+
+         case SDLK_t:
+            /* Toggle show_turtle */
+            show_turtle = 1 - show_turtle;
+            turtle_lines = 0;
+            break;
+
             /* None of the above, do nothing */
          default:
             break;
@@ -668,13 +707,8 @@ static void draw_scene(void)
    glLoadIdentity();
    glTranslatef(move_x, move_y, zoom);
 
-   glLineWidth(1.5);
-   glBegin(GL_LINES);
-
    /* Draw selected L-system */
    draw_lindenmayer_system(current_lsys);
-
-   glEnd();
 
    /* Show frame */
    SDL_GL_SwapBuffers();
@@ -689,6 +723,7 @@ int main(int argc __attribute__ ((unused)), char *argv[] __attribute__ ((unused)
 
    printf(
           "KEYS\n\n"
+          " t        - Toggle Turtle\n\n"
           "Browse L-systems with o/p\n\n"
           " 0        - Sierpinski triangle\n"
           " 1        - Terdragon curve\n"
