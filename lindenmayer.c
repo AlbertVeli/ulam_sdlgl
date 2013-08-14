@@ -13,6 +13,7 @@
  */
 
 #include <stdio.h>
+#include <math.h>
 #include <SDL.h>
 
 #include "lsystems.h"
@@ -61,6 +62,17 @@ static int invert = 1;
 static int colour = 0;
 static int show_turtle = 1;
 static int turtle_lines = 0;
+
+struct ccoords {
+   float x;
+   float y;
+   int colour;
+   unsigned char end_strip; /* 1 to end this line strip */
+};
+struct ccoords *coords = NULL;
+static int num_coords = 0;
+static int max_coords = 0;
+
 
 /* 4k * 512 = 2M
  * 2M for pattern_a and 2M for pattern_b = 4Mb in total.
@@ -253,68 +265,140 @@ static void expand_lindenmayer(struct lsystem *lsys, int remove_null)
 }
 
 
-static void compile_lindenmayer_pattern(struct lsystem *lsys, int n)
+/* Return first byte after reserved word */
+static char *skip_reserved(char *p)
 {
-   /* Dont recurse. Just expand axiom into pattern_b level times */
-   snprintf(pattern_b, PATTERN_LEN, "%s", lsys->axiom);
-   linelen = lsys->init_len;
+   char *endptr;
 
-   if (n > lsys->maxlevel) {
-      n = lsys->maxlevel;
-      level = n;
+   if (*p == '@') {
+      float l = strtof((p + 1), &endptr);
+   } else if (*p == 'C') {
+      int c = strtoul((p + 1), &endptr, 10);
+   } else {
+      fprintf(stderr, "Error: '%c' not reserved\n", *p);
+      return NULL;
+   }
+   if (endptr == p + 1) {
+      fprintf(stderr, "Error: failed to read val after %c\n", *p);
+      return NULL;
    }
 
-   /* Expand */
-   while (n > 0) {
-      /* Copy pattern_b to pattern_a */
-      strcpy(pattern_a, pattern_b);
-      /* skip A_NULL symbols if n is 1 (last iteration) */
-      expand_lindenmayer(lsys, n == 1);
-      n--;
-   }
-
-   turtle_lines = 0;
+   return endptr;
 }
 
 
-static void draw_lindenmayer_system(struct lsystem *lsys)
+/* Compile final output in pattern_b into x/y coordinates */
+static void compile_xy_coordinates(struct lsystem *lsys)
 {
+   char *p;
    int angle, turn_angle;
-   float new_x;
-   float new_y;
    float turtle_x = lsys->init_x;
    float turtle_y = lsys->init_y;
-   char *p;
+   float tmp_x, tmp_y;
    int i;
-   float old_linelen = linelen;
-   float turtlesize = 0.5;
-   int lines = 0;
+
+   /* First pass, count number of lines */
+   p = pattern_b;
+   num_coords = 0;
+
+   while (*p) {
+
+      /* Reserved symbols */
+      if (*p == '@' || *p == 'C') {
+         p = skip_reserved(p);
+         if (!p) {
+            /* epic fail */
+            num_coords = 0;
+            if (coords) {
+               free(coords);
+               coords = NULL;
+            }
+            return;
+         }
+         continue;
+      }
+
+      /* Lookup action for *p */
+      for (i = 0; i < lsys->num_symbols; i++) {
+         if (lsys->rules[i].symbol == *p) {
+            break;
+         }
+      }
+      if (i == lsys->num_symbols) {
+         /* Lookup failed */
+         fprintf(stderr, "Error: lookup failed for symbol '%c'\n", *p);
+         num_coords = 0;
+         if (coords) {
+            free(coords);
+            coords = NULL;
+         }
+         return;
+      }
+
+      /* All ok. */
+      switch (lsys->rules[i].action) {
+
+      case A_FORWARD: /* Count number of lines */
+      case A_POP:     /* pop might add vertex (we don't know yet) */
+      case A_MOVE:    /* Move causes at least one extra vertex */
+         num_coords++;
+         break;
+      case A_PLUS: /* Ignore the rest in this pass */
+      case A_MINUS:
+      case A_PIPE:
+      case A_INVERT:
+      case A_PUSH:
+      case A_NULL:
+         break;
+
+      default:
+         fprintf(stderr, "Error: action %d not implemented\n", lsys->rules[i].action);
+         num_coords = 0;
+         if (coords) {
+            free(coords);
+            coords = NULL;
+         }
+         return;
+         break;
+      }
+      p++;
+   }
+
+   /* Allocate memory for coords */
+   if (coords) {
+      free(coords);
+   }
+   coords = malloc(sizeof(struct ccoords) * (num_coords + 1));
+   if (!coords) {
+      fprintf(stderr, "Error: could not allocate memory for coords\n");
+      num_coords = 0;
+      return;
+   }
+
+   max_coords = num_coords + 1;
+
+   /* Second pass. Fill in data. */
 
    invert = 1;
    sp = 0;
-
-   glBegin(GL_LINES);
-   glLineWidth(1.5);
-
    colour = 0;
-   glColor4ub(r[colour], g[colour], b[colour], 255);
-
    angle = lsys->init_angle + (int)(lsys->angle_offset * (float)level + 0.5);
    turn_angle = lsys->angle;
    if (lsys->invert_angle && ((level & 1) == 1)) {
       turn_angle = -turn_angle;
    }
 
-   p = pattern_b;
-   turtle_lines++;
+   coords[0].x = turtle_x;
+   coords[0].y = turtle_y;
+   coords[0].colour = colour;
+   coords[0].end_strip = 0;
+   num_coords = 1;
 
-   /* If show_turtle, then draw one more line than last time, else draw all */
-   while (*p && ((show_turtle == 0) || (lines < turtle_lines))) {
+   p = pattern_b;
+   while (*p) {
 
       /* Reserved symbols */
-
       if (*p == '@' || *p == 'C') {
-         /* @/C are special, followed by float/int */
          char *endptr;
          float lenfactor;
          if (*p == '@') {
@@ -330,12 +414,14 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
                fprintf(stderr, "Warning: colour overflow\n");
                colour = NUM_COLORS - 1;
             }
-            glColor4ub(r[colour], g[colour], b[colour], 255);
          }
          if (endptr == p + 1) {
-            fprintf(stderr, "Error: failed to read float after @, giving up\n");
-            pattern_a[0] = 0;
-            pattern_b[0] = 0;
+            fprintf(stderr, "Error: failed to read val after '%c'\n", *p);
+            num_coords = 0;
+            if (coords) {
+               free(coords);
+               coords = NULL;
+            }
             return;
          }
          p = endptr;
@@ -351,26 +437,41 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
          }
       }
       if (i == lsys->num_symbols) {
-         /* Lookup failed, ignore this symbol */
+         /* Really should not happen, we just checked the same array. */
          fprintf(stderr, "Warning: lookup failed for symbol '%c'\n", *p);
       } else {
          /* Go */
          switch (lsys->rules[i].action) {
 
          case A_FORWARD: /* Move turtle forward (draw) */
-            new_x = turtle_x + linelen * lookup_cos(angle);
-            new_y = turtle_y + linelen * lookup_sin(angle);
-            glVertex2f(turtle_x, turtle_y);
-            glVertex2f(new_x, new_y);
-            turtle_x = new_x;
-            turtle_y = new_y;
+            if (num_coords >= max_coords) {
+               fprintf(stderr, "Error: beyond allocated memory %d %d\n", num_coords, max_coords);
+               quit = 1;
+               return;
+            }
+            if (coords[num_coords - 1].end_strip == 1) {
+               /* Last vertex was an end_strip.
+                * Start new strip
+                */
+               coords[num_coords].x = turtle_x;
+               coords[num_coords].y = turtle_y;
+               coords[num_coords].colour = colour;
+               coords[num_coords].end_strip = 0;
+               num_coords++;
+            }
+            turtle_x += linelen * lookup_cos(angle);
+            turtle_y += linelen * lookup_sin(angle);
+            coords[num_coords].x = turtle_x;
+            coords[num_coords].y = turtle_y;
+            coords[num_coords].colour = colour;
+            coords[num_coords].end_strip = 0;
+            num_coords++;
             break;
 
          case A_MOVE:    /* Move forward without drawing */
-            new_x = turtle_x + linelen * lookup_cos(angle);
-            new_y = turtle_y + linelen * lookup_sin(angle);
-            turtle_x = new_x;
-            turtle_y = new_y;
+            turtle_x += linelen * lookup_cos(angle);
+            turtle_y += linelen * lookup_sin(angle);
+            coords[num_coords - 1].end_strip = 1; /* End prev. strip. */
             break;
 
          case A_PLUS:    /* Rotate angle degrees */
@@ -397,7 +498,14 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
             break;
 
          case A_POP:     /* Pop pos/angle from stack */
+            tmp_x = turtle_x;
+            tmp_y = turtle_y;
             pop(&angle, &turtle_x, &turtle_y);
+            if (tmp_x - turtle_x > 0.001 || tmp_x - turtle_x < -0.001 ||
+                tmp_y - turtle_y > 0.001 || tmp_y - turtle_y< -0.001) {
+               /* pop changed position of turtle */
+               coords[num_coords - 1].end_strip = 1; /* End prev. strip. */
+            }
             break;
 
          case A_NULL:    /* No action, symbol only */
@@ -408,20 +516,97 @@ static void draw_lindenmayer_system(struct lsystem *lsys)
             break;
          }
       }
-
       p++;
-      lines++;
+   }
+}
+
+
+static void compile_lindenmayer_pattern(struct lsystem *lsys, int n)
+{
+   /* Dont recurse. Just expand axiom into pattern_b level times */
+   snprintf(pattern_b, PATTERN_LEN, "%s", lsys->axiom);
+   linelen = lsys->init_len;
+
+   if (n > lsys->maxlevel) {
+      n = lsys->maxlevel;
+      level = n;
    }
 
-   /* Restore linelen */
-   linelen = old_linelen;
+   /* Expand */
+   while (n > 0) {
+      /* Copy pattern_b to pattern_a */
+      strcpy(pattern_a, pattern_b);
+      /* skip A_NULL symbols if n is 1 (last iteration) */
+      expand_lindenmayer(lsys, n == 1);
+      n--;
+   }
 
+   compile_xy_coordinates(lsys);
+
+   turtle_lines = 0;
+}
+
+
+static void draw_lindenmayer_system(void)
+{
+   int i;
+   float turtlesize = 0.5;
+   float turtle_x = 0;
+   float turtle_y = 0;
+   int lines = 0;
+   struct ccoords *cp;
+
+   if (num_coords == 0) {
+      /* Nothing to draw */
+      return;
+   }
+
+   glLineWidth(1.5);
+   glBegin(GL_LINE_STRIP);
+   colour = coords[0].colour;
+   glColor4ub(r[colour], g[colour], b[colour], 255);
+   i = 0;
+   cp = coords;
+
+   turtle_lines++;
+
+   /* If show_turtle, then draw one more line than last time, else draw all */
+   while (i < num_coords && ((show_turtle == 0) || (lines < turtle_lines))) {
+      if (colour != cp->colour) {
+         colour = cp->colour;
+         glColor4ub(r[colour], g[colour], b[colour], 255);
+      }
+      turtle_x = cp->x;
+      turtle_y = cp->y;
+      glVertex2f(turtle_x, turtle_y);
+      lines++;
+      if (cp->end_strip) {
+         /* End this segment, begin new */
+         glEnd();
+         glBegin(GL_LINE_STRIP);
+      }
+
+      cp++;
+      i++;
+   }
+
+   /* End last segment */
    glEnd();
 
    if (show_turtle) {
+      float angle;
       glEnable(GL_TEXTURE_2D);
       glColor4ub(255, 255, 255, 255);
       glTranslatef(turtle_x, turtle_y, 0);
+      if (i < 2) {
+         angle = 90;
+      } else {
+         float dx, dy;
+         i -= 2;
+         dx = coords[i+1].x - coords[i].x;
+         dy = coords[i+1].y - coords[i].y;
+         angle = atan2f(dy, dx) * (180.0 / M_PI);
+      }
       glRotatef(angle, 0.0f, 0.0f, 1.0f);
       glBegin(GL_QUADS);
       glTexCoord2f(0, 0); glVertex3f(-turtlesize, -turtlesize,  0.1);
@@ -470,6 +655,10 @@ static void cleanup_linden(void)
       free(pattern_b);
       pattern_b = NULL;
    }
+   if (coords) {
+      free(coords);
+      coords = NULL;
+   }
 }
 
 
@@ -497,6 +686,7 @@ static void check_events(void)
    static int zoomkey = 0;
    static int xkey = 0;
    static int ykey = 0;
+   int i;
 
    while (SDL_PollEvent(&event)) {
 
@@ -623,8 +813,15 @@ static void check_events(void)
 
 #if 1
          case SDLK_d:
-            /* Debug pattern_b */
+            /* Debug pattern_b/coords */
             printf("%s\n", pattern_b);
+            for (i = 0; i < num_coords; i++) {
+               printf("(%f,%f,%d) ", coords[i].x, coords[i].y, coords[i].colour);
+               if (coords[i].end_strip) {
+                  printf("e\n");
+               }
+            }
+            printf("\nnum_coords %d\n",num_coords);
             break;
 #endif
 
@@ -708,7 +905,7 @@ static void draw_scene(void)
    glTranslatef(move_x, move_y, zoom);
 
    /* Draw selected L-system */
-   draw_lindenmayer_system(current_lsys);
+   draw_lindenmayer_system();
 
    /* Show frame */
    SDL_GL_SwapBuffers();
