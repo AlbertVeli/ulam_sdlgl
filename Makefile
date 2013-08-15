@@ -54,3 +54,4 @@ clean:
 	rm -f $(X_LINDENMAYER) $(OBJS_LINDENMAYER) *.plist *~
 	make -C ulam clean
 	make -C recursive clean
+	make -C webgl clean
