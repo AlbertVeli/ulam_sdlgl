@@ -162,8 +162,8 @@ function handle_keys(elapsed) {
     dz += zchange * zoom;
     dz /= 1.1;
     zoom += dz;
-    if (zoom > -0.1) {
-	zoom = -0.1;
+    if (zoom > -0.01) {
+	zoom = -0.01;
 	dz = 0;
     } else if (zoom < -99.9) {
 	zoom = -99.9;
@@ -232,7 +232,7 @@ function key_down(event) {
 	    if (level < max_level) {
 		// recalculate coords
 		level++;
-		init_lindenmayer();
+		init_lsystem();
 	    }
 	    break;
 
@@ -243,9 +243,44 @@ function key_down(event) {
 	    if (level > 0) {
 		// recalculate coords
 		level--;
-		init_lindenmayer();
+		init_lsystem();
 	    }
 	    break;
+
+	case 79:
+	case 82:
+	    // o
+	    if (current_lsystem > 0) {
+		current_lsystem--;
+		init_lsystem();
+	    }
+	    break;
+
+	case 80:
+	case 76:
+	    // p
+	    if (current_lsystem < lsystems.length - 1) {
+		current_lsystem++;
+		init_lsystem();
+	    }
+	    break;
+
+	case 68:
+	    // d
+	    clear_debug();
+	    debug_out(pattern, false);
+	    break;
+
+	case 77:
+	    // m, toggle multicolour
+	    if (multicolour) {
+		multicolour = false;
+	    } else {
+		multicolour = true;
+	    }
+	    init_lsystem();
+	    break;
+
 	}
 	pressed_keys[event.keyCode] = true;
     }
@@ -270,7 +305,7 @@ function start_webgl() {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.enable(gl.DEPTH_TEST);
 
-    mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, p_matrix);
+    mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.01, 100.0, p_matrix);
 
     document.onkeydown = key_down;
     document.onkeyup = key_up;
