@@ -19,10 +19,16 @@ fractals like:
 
 and more... see: http://en.wikipedia.org/wiki/L-system
 
-The subdirectory ulam contains a program that uses the same OpenGL
-routines to draw an Ulam spiral (a method of visualizing prime
-numbers) and the recursive subdirectory contains a program that draws
-some of these fractals using recursive methods (much slower).
+Live demo using WebGL:
+
+ http://albertveli.github.io/ulam_sdlgl/
+
+Source code for the demo is in the webgl subdirectory.
+
+The subdirectory ulam contains a program that uses OpenGL to draw an
+Ulam spiral (a method of visualizing prime numbers) and the recursive
+subdirectory contains a program that draws some of these fractals
+using recursive methods (much slower).
 
 
 Sweetmorn, the 2nd day of Bureaucracy in the YOLD 3179
