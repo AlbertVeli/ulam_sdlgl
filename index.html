@@ -1,0 +1,45 @@
+<html>
+
+<head>
+<title>WebGL L-systems</title>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+
+<!-- WebGL framework partly from lesson 2 at http://learningwebgl.com/ -->
+<script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="webglstuff.js"></script>
+
+<!-- Shaders needs to be in the main html file for some reason -->
+<script id="shader-fs" type="x-shader/x-fragment">
+    precision mediump float;
+    varying vec4 v_col;
+    void main(void) {
+        gl_FragColor = v_col;
+    }
+</script>
+<script id="shader-vs" type="x-shader/x-vertex">
+    attribute vec2 vx_pos;
+    attribute vec4 vx_col;
+    uniform mat4 u_mvmx;
+    uniform mat4 u_pmx;
+    varying vec4 v_col;
+    void main(void) {
+        gl_Position = u_pmx * u_mvmx * vec4(vx_pos, 0.0, 1.0);
+        v_col = vx_col;
+    }
+</script>
+
+<!-- Custom L-systems code in this file -->
+<script type="text/javascript" src="lindenmayer.js"></script>
+
+</head>
+
+<body onload="start_webgl();">
+  <noscript>
+    Enable Javascript to run this
+  </noscript>
+  <canvas id="main_canvas" style="border: none;" width="640"height="480"></canvas>
+  <p id="debug_area"></p>
+</body>
+
+</html>
