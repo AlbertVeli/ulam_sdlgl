@@ -171,12 +171,66 @@ function lsys_terdragon() {
     rules["-"] = '-';
     pattern = axiom;
     turn_angle = 120;
-    angle_offset = -30;
     lendiv = Math.sqrt(3);
     current_colour = 15;
     max_level = 12;
     turtle_x = -1.5;
     turtle_y = 0.5;
+    angles_to_radians();
+};
+
+function lsys_twindragon() {
+    lsys_name = '<a href="http://en.wikipedia.org/wiki/Dragon_curve#Twindragon" target="_blank">Twindragon</a> (Davis-Knuth)';
+    if (multicolour) {
+	axiom = 'C4Fx+C14Fx+';
+    } else {
+	axiom = 'Fx+Fx-';
+    }
+    rules["F"] = '';
+    rules["x"] = 'x+yF';
+    rules["y"] = 'Fx-y';
+    rules["+"] = '+';
+    rules["-"] = '-';
+    pattern = axiom;
+    turn_angle = 90;
+    angle = -20 - (45 * level);
+    linelen = 3.0;
+    lendiv = Math.sqrt(2);
+    current_colour = 15;
+    max_level = 19;
+    turtle_x = -0.961;
+    turtle_y = -0.448;
+    angles_to_radians();
+};
+
+function lsys_dragon() {
+    lsys_name = '<a href="http://en.wikipedia.org/wiki/Dragon_curve" target="_blank">Dragon</a> (Harter-Heighway)';
+    if (multicolour) {
+	axiom = 'C4Fx-C14Fy';
+	rules["x"] = 'Fx+Fy';
+	rules["y"] = 'Fx-Fy';
+	angle = -110 - (45 * level);
+	linelen = 1.5;
+	turtle_x = 1.13;
+	turtle_y = 0.77;
+    } else {
+	axiom = 'Fx';
+	rules["x"] = 'x+yF+';
+	rules["y"] = '-Fx-y';
+	angle = -20 - (45 * level);
+	linelen = 3.0;
+	turtle_x = -0.8;
+	turtle_y = -0.125;
+    }
+    rules["F"] = '';
+    rules["+"] = '+';
+    rules["-"] = '-';
+    pattern = axiom;
+    turn_angle = 90;
+
+    lendiv = Math.sqrt(2);
+    current_colour = 15;
+    max_level = 20;
     angles_to_radians();
 };
 
@@ -192,7 +246,6 @@ function lsys_snowflake() {
     rules["-"] = '-';
     pattern = axiom;
     turn_angle = 60;
-    angle_offset = 0;
     linelen = 3.0;
     lendiv = 3;
     current_colour = 15;
@@ -221,10 +274,9 @@ function lsys_flowsnake() {
     rules["-"] = '-';
     pattern = axiom;
     turn_angle = 60;
-    angle_offset = 0;
     lendiv = 2.65;
     current_colour = 15;
-    max_level = 7;
+    max_level = 6;
     turtle_x = -1.5;
     turtle_y = 0.85;
     angle += 19.3 * level;
@@ -247,7 +299,6 @@ function lsys_sierpinski() {
     rules["-"] = '-';
     pattern = axiom;
     turn_angle = 60;
-    angle_offset = 0;
     lendiv = 2.0;
     current_colour = 15;
     max_level = 12;
@@ -274,7 +325,6 @@ function lsys_church() {
     rules["-"] = '-';
     pattern = axiom;
     turn_angle = 90;
-    angle_offset = 0;
     lendiv = 1.732;
     current_colour = 15;
     max_level = 11;
@@ -369,9 +419,11 @@ function init_lsystem2() {
 // Called only once, at startup
 function init_lindenmayer() {
     // L-systems will appear in this order
-    lsystems.push(lsys_church);
+    lsystems.push(lsys_dragon);
+    lsystems.push(lsys_twindragon);
     lsystems.push(lsys_sierpinski);
     lsystems.push(lsys_terdragon);
+    lsystems.push(lsys_church);
     lsystems.push(lsys_levy);
     lsystems.push(lsys_snowflake);
     lsystems.push(lsys_flowsnake);
