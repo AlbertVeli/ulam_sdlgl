@@ -33,6 +33,25 @@ var colours = [];
 var current_colour = 15;
 var multicolour = true;
 
+var stack_x = [];
+var stack_y = [];
+var stack_len = [];
+var stack_col = [];
+
+function push() {
+    stack_x.push(turtle_x);
+    stack_y.push(turtle_y);
+    stack_len.push(linelen);
+    stack_col.push(current_colour);
+};
+
+function pop() {
+    turtle_x = stack_x.pop();
+    turtle_y = stack_y.pop();
+    linelen = stack_len.pop();
+    current_colour = stack_col.pop();
+};
+
 var palette = [
     // Bright 0
     0.0, 0.0, 0.0, 1.0, // 0 Black
@@ -60,7 +79,7 @@ function push_colour() {
     colours.push(palette[i + 1]);
     colours.push(palette[i + 2]);
     colours.push(palette[i + 3]);
-}
+};
 
 // clear() method for Array class
 Array.prototype.clear = function() {
@@ -108,6 +127,17 @@ function render_arrays() {
 
 	case '-':
 	    angle -= turn_angle;
+	    break;
+
+	case '[':
+	    push();
+	    break;
+
+	case ']':
+	    if (!first) {
+		// TODO: End line strip
+	    }
+	    pop();
 	    break;
 
 	case 'C':
@@ -334,6 +364,29 @@ function lsys_church() {
     angles_to_radians();
 };
 
+function lsys_plant() {
+    lsys_name = 'Plant';
+    if (multicolour) {
+	axiom = 'C12x';
+    } else {
+	axiom = 'x';
+    }
+    rules["F"] = 'FF';
+    rules["x"] = 'F-[[x]+x]+F[+Fx]-x';
+    rules["+"] = '+';
+    rules["-"] = '-';
+    pattern = axiom;
+    turn_angle = 23;
+    linelen = 1.5;
+    lendiv = 2;
+    current_colour = 15;
+    max_level = 19;
+    turtle_x = -1.5;
+    turtle_y = 0.85;
+    angle = 90;
+    angles_to_radians();
+};
+
 function clear_lsys() {
     pattern = '';
     axiom = '';
@@ -419,6 +472,7 @@ function init_lsystem2() {
 // Called only once, at startup
 function init_lindenmayer() {
     // L-systems will appear in this order
+    //lsystems.push(lsys_plant);
     lsystems.push(lsys_dragon);
     lsystems.push(lsys_twindragon);
     lsystems.push(lsys_sierpinski);
@@ -446,7 +500,7 @@ function init_buffers() {
     gl.bindBuffer(gl.ARRAY_BUFFER, colbuf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colours), gl.STATIC_DRAW);
     colbuf.sz = 4;
-}
+};
 
 function draw_scene() {
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -466,4 +520,4 @@ function draw_scene() {
 	set_mat_uniforms();
 	gl.drawArrays(gl.LINE_STRIP, 0, linebuf.num_items);
     }
-}
+};
