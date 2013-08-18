@@ -93,8 +93,7 @@ function pop_matrix() {
     mv_matrix = matrix_stack.pop();
 }
 
-function set_mat_uniforms() {
-    gl.uniformMatrix4fv(shader_program.p_matrix, false, p_matrix);
+function set_mv_uniform() {
     gl.uniformMatrix4fv(shader_program.mv_matrix, false, mv_matrix);
 }
 
@@ -268,7 +267,15 @@ function key_down(event) {
 	case 68:
 	    // d
 	    clear_debug();
-	    debug_out(pattern, false);
+	    debug_out(pattern);
+	    debug_out('', true);
+	    for (var i = 0; i < coords.length; i++) {
+		if (i % 2 == 0) {
+		    debug_out(' (' + coords[i] + ',');
+		} else {
+		    debug_out(coords[i] + ')');
+		}
+	    }
 	    break;
 
 	case 77:
@@ -306,6 +313,8 @@ function start_webgl() {
     gl.enable(gl.DEPTH_TEST);
 
     mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.01, 100.0, p_matrix);
+    // p_matrix is never changed, only need to set it once
+    gl.uniformMatrix4fv(shader_program.p_matrix, false, p_matrix);
 
     document.onkeydown = key_down;
     document.onkeyup = key_up;
