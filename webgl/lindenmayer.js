@@ -32,6 +32,9 @@ var turtle_y;
 var coords_arr = [];
 var coords;
 
+var poly_arr = [];
+var poly;
+
 var colours_arr = [];
 var colours;
 var current_colour = 15;
@@ -108,8 +111,10 @@ function render_arrays() {
     var c;
 
     clear_arr_arr(coords_arr);
+    clear_arr_arr(poly_arr);
     clear_arr_arr(colours_arr);
     coords = new Array();
+    poly = new Array();
     colours = new Array();
     current_colour = 15;
 
@@ -163,14 +168,75 @@ function render_arrays() {
 
 	case ']':
 	    if (!first) {
-		// End line strip
-		coords_arr.push(coords);
-		colours_arr.push(colours);
-		coords = new Array();
-		colours = new Array();
+		// End strip
+		if (coords.length > 0) {
+		    coords_arr.push(coords);
+		    coords = new Array();
+		}
+		if (poly.length > 0) {
+		    poly_arr.push(poly);
+		    poly = new Array();
+		}
+		if (colours.length > 0) {
+		    colours_arr.push(colours);
+		    colours = new Array();
+		}
 		first = true;
 	    }
 	    pop();
+	    break;
+
+	case 'G': // Move forward without recording vertex
+	    if (first) {
+		poly.push(turtle_x);
+		poly.push(turtle_y);
+		push_colour();
+		first = false;
+	    }
+	    turtle_x += linelen * Math.cos(angle);
+	    turtle_y += linelen * Math.sin(angle);
+	    break;
+
+	case '{':
+	    if (!first) {
+//		poly.push(turtle_x);
+//		poly.push(turtle_y);
+//		push_colour();
+		if (poly.length > 0) {
+		    poly_arr.push(poly);
+		    poly = new Array();
+		}
+		if (colours.length > 0) {
+		    colours_arr.push(colours);
+		    colours = new Array();
+		}
+		first = true;
+	    }
+	    break;
+
+	case '}':
+	    if (!first) {
+		// End polygon
+//		poly.push(turtle_x);
+//		poly.push(turtle_y);
+//		push_colour();
+		if (poly.length > 0) {
+		    poly_arr.push(poly);
+		    poly = new Array();
+		}
+		if (colours.length > 0) {
+		    colours_arr.push(colours);
+		    colours = new Array();
+		}
+		first = true;
+	    }
+	    break;
+
+	case '.': // Record polygon vertex
+	    first = false;
+	    poly.push(turtle_x);
+	    poly.push(turtle_y);
+	    push_colour();
 	    break;
 
 	case 'C':
@@ -187,9 +253,16 @@ function render_arrays() {
 	    break;
 	}
     }
-    // End last line strip
-    coords_arr.push(coords);
-    colours_arr.push(colours);
+    // End last strip
+    if (coords.length > 0) {
+	coords_arr.push(coords);
+    }
+    if (poly.length > 0) {
+	poly_arr.push(poly);
+    }
+    if (colours.length > 0) {
+	colours_arr.push(colours);
+    }
 };
 
 function angles_to_radians() {
@@ -459,6 +532,33 @@ function lsys_penrose1() {
     angle = 0;
 };
 
+function lsys_penrose_polygon() {
+    lsys_name = '<a href="http://en.wikipedia.org/wiki/Penrose_tiling" target="_blank">Penrose</a> Polygons';
+    axiom = '[x]++[x]++[x]++[x]++[x]';
+//    axiom = '[y]++[y]++[y]++[y]++[y]';
+//    axiom = '+wG--xG--yG--zG';
+    rules["G"] = '';
+    rules["w"] = 'yG++{C1.zG.----xG.[-yG.----wG.}]++';
+    rules["x"] = '+{C6.yG.--zG.[---wG.--xG.}]+';
+    rules["y"] = '-{C14.wG.++xG.[+++yG.++zG.}]-';
+    rules["z"] = '--{C3.yG.++++wG.[+zG.++++xG.}]--xG';
+    rules["+"] = '+';
+    rules["-"] = '-';
+    rules["["] = '[';
+    rules["]"] = ']';
+    rules["{"] = '';
+    rules["}"] = '';
+    rules["."] = '';
+    linelen = 2.0;
+    pattern = axiom;
+    turn_angle = 36;
+    lendiv = 1.65;
+    max_level = 7;
+    turtle_x = 0.0;
+    turtle_y = 0.0;
+    angle = 0;
+};
+
 function clear_lsys() {
     pattern = '';
     axiom = '';
@@ -530,7 +630,7 @@ function init_lsystem() {
 
 // Continue here after small delay
 function init_lsystem2() {
-    var i, vertices;
+    var i, vertices, cols;
 
     clear_debug();
     for (i = 0; i < level; i++) {
@@ -540,10 +640,16 @@ function init_lsystem2() {
     debug_out('L-system: ' + lsys_name, true);
     debug_out('Level: ' + level, true);
     vertices = 0;
+    cols = 0;
     for (i = 0; i < coords_arr.length; i++) {
 	vertices += coords_arr[i].length / 2;
+	cols += colours_arr[i].length / 4;
     }
-    debug_out('Number of vertices: ' + vertices, true);
+    for (i = 0; i < poly_arr.length; i++) {
+	vertices += poly_arr[i].length / 2;
+	cols += colours_arr[i].length / 4;
+    }
+    debug_out('Number of vertices: ' + vertices + ' (' + cols + ')', true);
     out_keys();
     init_buffers();
     rendered = true;
@@ -552,6 +658,7 @@ function init_lsystem2() {
 // Called only once, at startup
 function init_lindenmayer() {
     // L-systems will appear in this order
+    lsystems.push(lsys_penrose_polygon);
     lsystems.push(lsys_dragon);
     lsystems.push(lsys_twindragon);
     lsystems.push(lsys_sierpinski);
@@ -570,14 +677,17 @@ function init_lindenmayer() {
 // Mostly OpenGL stuff below
 
 var linebuf = [];
+var polybuf = [];
 var colbuf = [];
 var linebuf_sz = 2;
+var polybuf_sz = 2;
 var colbuf_sz = 4;
 
 function init_buffers() {
     var i;
 
     linebuf.clear();
+    polybuf.clear();
     colbuf.clear();
 
     for (i = 0; i < coords_arr.length; i++) {
@@ -585,7 +695,14 @@ function init_buffers() {
 	gl.bindBuffer(gl.ARRAY_BUFFER, linebuf[i]);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coords_arr[i]), gl.STATIC_DRAW);
 	linebuf[i].num_items = coords_arr[i].length / 2;
-
+    }
+    for (i = 0; i < poly_arr.length; i++) {
+	polybuf[i] = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, polybuf[i]);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(poly_arr[i]), gl.STATIC_DRAW);
+	polybuf[i].num_items = poly_arr[i].length / 2;
+    }
+    for (i = 0; i < colours_arr.length; i++) {
 	colbuf[i] = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, colbuf[i]);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colours_arr[i]), gl.STATIC_DRAW);
@@ -613,6 +730,13 @@ function draw_scene() {
 	    gl.bindBuffer(gl.ARRAY_BUFFER, colbuf[i]);
 	    gl.vertexAttribPointer(shader_program.vertex_col, colbuf_sz, gl.FLOAT, false, 0, 0);
 	    gl.drawArrays(gl.LINE_STRIP, 0, linebuf[i].num_items);
+	}
+	for (i = 0; i < poly_arr.length; i++) {
+	    gl.bindBuffer(gl.ARRAY_BUFFER, polybuf[i]);
+	    gl.vertexAttribPointer(shader_program.vertex_pos, polybuf_sz, gl.FLOAT, false, 0, 0);
+	    gl.bindBuffer(gl.ARRAY_BUFFER, colbuf[i]);
+	    gl.vertexAttribPointer(shader_program.vertex_col, colbuf_sz, gl.FLOAT, false, 0, 0);
+	    gl.drawArrays(gl.TRIANGLE_STRIP, 0, polybuf[i].num_items);
 	}
     }
 };

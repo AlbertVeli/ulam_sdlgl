@@ -267,14 +267,28 @@ function key_down(event) {
 	case 68:
 	    // d
 	    clear_debug();
-	    debug_out(pattern);
-	    debug_out('', true);
-	    for (var i = 0; i < coords.length; i++) {
-		if (i % 2 == 0) {
-		    debug_out(' (' + coords[i] + ',');
-		} else {
-		    debug_out(coords[i] + ')');
+	    debug_out(pattern, true);
+	    for (var j = 0; j < coords_arr.length; j++) {
+	    debug_out('Line ' + j + ': ');
+		for (var i = 0; i < coords_arr[j].length; i++) {
+		    if (i % 2 == 0) {
+			debug_out(' (' + coords_arr[j][i] + ',');
+		    } else {
+			debug_out(coords_arr[j][i] + ')');
+		    }
 		}
+		debug_out(' end', true);
+	    }
+	    for (var j = 0; j < poly_arr.length; j++) {
+	    debug_out('Poly ' + j + ': ');
+		for (var i = 0; i < poly_arr[j].length; i++) {
+		    if (i % 2 == 0) {
+			debug_out(' (' + poly_arr[j][i] + ',');
+		    } else {
+			debug_out(poly_arr[j][i] + ')');
+		    }
+		}
+		debug_out(' end', true);
 	    }
 	    break;
 
