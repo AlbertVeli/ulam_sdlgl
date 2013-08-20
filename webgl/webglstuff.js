@@ -1,4 +1,13 @@
-// GL stuff, partly from lesson 2/6 at http://learningwebgl.com/
+/* (k) ALL RIGHTS REVERSED - Reprint what you like
+ *
+ * GL stuff, partly from lesson 2/6 at http://learningwebgl.com/
+ *
+ *
+ * Boomtime, the 13th day of Bureaucracy in the YOLD 3179
+ *
+ * Albert Veli
+ */
+
 var gl;
 var canvas;
 
