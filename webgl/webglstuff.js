@@ -289,6 +289,11 @@ function key_down(event) {
 		    }
 		}
 		debug_out(' end', true);
+		if (debug) {
+		    debug = false;
+		} else {
+		    debug = true;
+		}
 	    }
 	    break;
 

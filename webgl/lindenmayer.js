@@ -21,6 +21,7 @@ var pattern = '';
 var level = 3;
 var max_level = 9;
 var mode_poly = false;
+var debug = false;
 
 var angle;
 var turn_angle;
@@ -33,8 +34,9 @@ var turtle_y;
 var coords_arr = [];
 var coords;
 
+var poly_level = 0;
 var poly_arr = [];
-var poly;
+var poly_col_arr = [];
 
 var colours_arr = [];
 var colours;
@@ -86,10 +88,18 @@ var palette = [
 
 function push_colour() {
     var i = current_colour * 4;
-    colours.push(palette[i + 0]);
-    colours.push(palette[i + 1]);
-    colours.push(palette[i + 2]);
-    colours.push(palette[i + 3]);
+
+    if (mode_poly) {
+	poly_col_arr[poly_level].push(palette[i + 0]);
+	poly_col_arr[poly_level].push(palette[i + 1]);
+	poly_col_arr[poly_level].push(palette[i + 2]);
+	poly_col_arr[poly_level].push(palette[i + 3]);
+    } else {
+	colours.push(palette[i + 0]);
+	colours.push(palette[i + 1]);
+	colours.push(palette[i + 2]);
+	colours.push(palette[i + 3]);
+    }
 };
 
 // clear() method for Array class
@@ -110,12 +120,24 @@ function clear_arr_arr(arr) {
 function render_arrays() {
     var first = true;
     var c;
+    var poly = [];
+    var saved_colour = [];
 
-    clear_arr_arr(coords_arr);
-    clear_arr_arr(poly_arr);
-    clear_arr_arr(colours_arr);
-    coords = new Array();
-    poly = new Array();
+    if (mode_poly) {
+	poly_level = 0;
+	if (poly_arr.length > 0) {
+	    clear_arr_arr(poly_arr);
+	}
+	poly_col_arr = [];
+	poly_col_arr[poly_level] = new Array();
+	poly[poly_level] = new Array();
+    } else {
+	clear_arr_arr(coords_arr);
+	coords = new Array();
+    }
+    if (colours_arr.length > 0) {
+	clear_arr_arr(colours_arr);
+    }
     colours = new Array();
     current_colour = 15;
 
@@ -156,22 +178,37 @@ function render_arrays() {
 	    break;
 
 	case '+':
+//	    if (debug) {
+//		debug_out('turn left', true);
+//	    }
 	    angle += turn_angle;
 	    break;
 
 	case '-':
+//	    if (debug) {
+//		debug_out('turn right', true);
+//	    }
 	    angle -= turn_angle;
 	    break;
 
 	case '|':
+//	    if (debug) {
+//		debug_out('turn around', true);
+//	    }
 	    angle += pipe_angle;
 	    break;
 
 	case '[':
+//	    if (debug) {
+//		debug_out('push', true);
+//	    }
 	    push();
 	    break;
 
 	case ']':
+//	    if (debug) {
+//		debug_out('pop', true);
+//	    }
 	    if (!first) {
 		// End strip
 		if (!mode_poly) {
@@ -190,38 +227,53 @@ function render_arrays() {
 	    break;
 
 	case 'G':
+//	    if (debug) {
+//		debug_out('G', true);
+//	    }
 	    turtle_x += linelen * Math.cos(angle);
 	    turtle_y += linelen * Math.sin(angle);
 	    break;
 
 	case '{':
-	    if (poly.length > 0) {
-		poly_arr.push(poly);
-		poly = new Array();
-	    }
-	    if (colours.length > 0) {
-		colours_arr.push(colours);
-		colours = new Array();
-	    }
+	    saved_colour.push(current_colour);
+	    poly_level++;
+	    poly[poly_level] = new Array();
+	    poly_col_arr[poly_level] = new Array();
 	    first = true;
+//	    if (debug) {
+//		debug_out('Save C' + current_colour + ', { level: ' + poly_level, true);
+//	    }
 	    break;
 
 	case '}':
-	    if (poly.length > 0) {
-		poly_arr.push(poly);
-		poly = new Array();
+//	    if (debug) {
+//		debug_out('} level: ' + poly_level + ', ' + poly[poly_level].length + ' vertices, ');
+//	    }
+	    if (poly[poly_level].length > 0) {
+		poly_arr.push(poly[poly_level]);
+		colours_arr.push(poly_col_arr[poly_level]);
+		if (poly_level > 0) {
+		    poly_level--;
+		} else {
+		    debug_out('Warning: unmatched polygon end', true);
+		    poly[poly_level] = new Array();
+		    poly_col_arr[poly_level] = new Array();
+		}
 	    }
-	    if (colours.length > 0) {
-		colours_arr.push(colours);
-		colours = new Array();
+	    current_colour = saved_colour.pop();
+	    if (debug) {
+		debug_out('restore C' + current_colour, true);
 	    }
 	    first = true;
 	    break;
 
 	case '.': // Record polygon vertex
+//	    if (debug) {
+//		debug_out('.', true);
+//	    }
 	    first = false;
-	    poly.push(turtle_x);
-	    poly.push(turtle_y);
+	    poly[poly_level].push(turtle_x);
+	    poly[poly_level].push(turtle_y);
 	    push_colour();
 	    break;
 
@@ -236,18 +288,26 @@ function render_arrays() {
 	    }
 	    current_colour = parseInt(num);
 	    i--; // increased by for loop
+//	    if (debug) {
+//		debug_out('C' + current_colour, true);
+//	    }
 	    break;
 	}
     }
     // End last strip
-    if (coords.length > 0) {
-	coords_arr.push(coords);
-    }
-    if (poly.length > 0) {
-	poly_arr.push(poly);
-    }
-    if (colours.length > 0) {
-	colours_arr.push(colours);
+    if (mode_poly) {
+//	if (debug) {
+//	    debug_out('Last ' + poly[poly_level].length + ' vertices', true);
+//	}
+	if (poly[poly_level].length > 0) {
+	    poly_arr.push(poly[poly_level]);
+	    colours_arr.push(poly_col_arr[poly_level]);
+	}
+    } else {
+	if (coords.length > 0) {
+	    coords_arr.push(coords);
+	    colours_arr.push(colours);
+	}
     }
 };
 
@@ -533,13 +593,11 @@ function lsys_penrose_polygon() {
     lsys_name = '<a href="http://en.wikipedia.org/wiki/Penrose_tiling" target="_blank">Penrose</a> Polygons';
     axiom = '[x]++[x]++[x]++[x]++[x]';
 //    axiom = '[y]++[y]++[y]++[y]++[y]';
-//    axiom = 'y';
-//    axiom = '+wG--xG--yG--zG';
     rules["G"] = '';
-    rules["w"] = 'yG++{C10.zG.----xG.[-yG.----wG.}]++';
-    rules["x"] = '+{C12.yG.--zG.[---wG.--xG.}]+';
-    rules["y"] = '-{C9.wG.++xG.[+++yG.++zG.}]-';
-    rules["z"] = '--{C7.yG.++++wG.[+zG.++++xG.}]--xG';
+    rules["w"] = 'yG++{C13.zG.----xG.[-yG.----wG.]}++';
+    rules["x"] = '+{C1.yG.--zG.[---wG.--xG.]}+';
+    rules["y"] = '-{C9.wG.++xG.[+++yG.++zG.]}-';
+    rules["z"] = '--{C5.yG.++++wG.[+zG.++++xG.]}--xG';
     rules["+"] = '+';
     rules["-"] = '-';
     rules["["] = '[';
@@ -636,20 +694,25 @@ function init_lsystem2() {
 	expand_lsys();
     }
     render_arrays();
-    debug_out('L-system: ' + lsys_name, true);
-    debug_out('Level: ' + level, true);
-    vertices = 0;
-    cols = 0;
-    for (i = 0; i < coords_arr.length; i++) {
-	vertices += coords_arr[i].length / 2;
-	cols += colours_arr[i].length / 4;
-    }
-    for (i = 0; i < poly_arr.length; i++) {
-	vertices += poly_arr[i].length / 2;
-	cols += colours_arr[i].length / 4;
-    }
-    debug_out('Number of vertices: ' + vertices + ' (' + cols + ')', true);
-    out_keys();
+//    if (!debug) {
+	debug_out('L-system: ' + lsys_name, true);
+	debug_out('Level: ' + level, true);
+	vertices = 0;
+	cols = 0;
+	if (mode_poly) {
+	    for (i = 0; i < poly_arr.length; i++) {
+		vertices += poly_arr[i].length / 2;
+		cols += colours_arr[i].length / 4;
+	    }
+	} else {
+	    for (i = 0; i < coords_arr.length; i++) {
+		vertices += coords_arr[i].length / 2;
+		cols += colours_arr[i].length / 4;
+	    }
+	}
+	debug_out('Number of vertices: ' + vertices + ' (' + cols + ')', true);
+	out_keys();
+//    }
     init_buffers();
     rendered = true;
 };
@@ -723,20 +786,22 @@ function draw_scene() {
 
 	set_mv_uniform();
 
-	for (i = 0; i < coords_arr.length; i++) {
-	    gl.bindBuffer(gl.ARRAY_BUFFER, linebuf[i]);
-	    gl.vertexAttribPointer(shader_program.vertex_pos, linebuf_sz, gl.FLOAT, false, 0, 0);
-	    gl.bindBuffer(gl.ARRAY_BUFFER, colbuf[i]);
-	    gl.vertexAttribPointer(shader_program.vertex_col, colbuf_sz, gl.FLOAT, false, 0, 0);
-	    gl.drawArrays(gl.LINE_STRIP, 0, linebuf[i].num_items);
-	}
-	for (i = 0; i < poly_arr.length; i++) {
-	    gl.bindBuffer(gl.ARRAY_BUFFER, polybuf[i]);
-	    gl.vertexAttribPointer(shader_program.vertex_pos, polybuf_sz, gl.FLOAT, false, 0, 0);
-	    gl.bindBuffer(gl.ARRAY_BUFFER, colbuf[i]);
-	    gl.vertexAttribPointer(shader_program.vertex_col, colbuf_sz, gl.FLOAT, false, 0, 0);
-	    gl.drawArrays(gl.TRIANGLE_STRIP, 0, polybuf[i].num_items);
-	    //gl.drawArrays(gl.LINE_STRIP, 0, polybuf[i].num_items);
+	if (mode_poly) {
+	    for (i = 0; i < poly_arr.length; i++) {
+		gl.bindBuffer(gl.ARRAY_BUFFER, polybuf[i]);
+		gl.vertexAttribPointer(shader_program.vertex_pos, polybuf_sz, gl.FLOAT, false, 0, 0);
+		gl.bindBuffer(gl.ARRAY_BUFFER, colbuf[i]);
+		gl.vertexAttribPointer(shader_program.vertex_col, colbuf_sz, gl.FLOAT, false, 0, 0);
+		gl.drawArrays(gl.TRIANGLE_STRIP, 0, polybuf[i].num_items);
+	    }
+	} else {
+	    for (i = 0; i < coords_arr.length; i++) {
+		gl.bindBuffer(gl.ARRAY_BUFFER, linebuf[i]);
+		gl.vertexAttribPointer(shader_program.vertex_pos, linebuf_sz, gl.FLOAT, false, 0, 0);
+		gl.bindBuffer(gl.ARRAY_BUFFER, colbuf[i]);
+		gl.vertexAttribPointer(shader_program.vertex_col, colbuf_sz, gl.FLOAT, false, 0, 0);
+		gl.drawArrays(gl.LINE_STRIP, 0, linebuf[i].num_items);
+	    }
 	}
     }
 };
