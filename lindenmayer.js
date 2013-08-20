@@ -1,3 +1,12 @@
+/* (k) ALL RIGHTS REVERSED - Reprint what you like
+ *
+ * http://en.wikipedia.org/wiki/L-system
+ *
+ * Boomtime, the 13th day of Bureaucracy in the YOLD 3179
+ *
+ * Albert Veli
+ */
+
 function debug_out(s, br) {
     var x=document.getElementById("debug_area");
     x.innerHTML += s;
@@ -20,6 +29,8 @@ var rules = {};
 var pattern = '';
 var level = 3;
 var max_level = 9;
+var mode_poly = false;
+var debug = false;
 
 var angle;
 var turn_angle;
@@ -31,6 +42,10 @@ var turtle_y;
 
 var coords_arr = [];
 var coords;
+
+var poly_level = 0;
+var poly_arr = [];
+var poly_col_arr = [];
 
 var colours_arr = [];
 var colours;
@@ -82,10 +97,18 @@ var palette = [
 
 function push_colour() {
     var i = current_colour * 4;
-    colours.push(palette[i + 0]);
-    colours.push(palette[i + 1]);
-    colours.push(palette[i + 2]);
-    colours.push(palette[i + 3]);
+
+    if (mode_poly) {
+	poly_col_arr[poly_level].push(palette[i + 0]);
+	poly_col_arr[poly_level].push(palette[i + 1]);
+	poly_col_arr[poly_level].push(palette[i + 2]);
+	poly_col_arr[poly_level].push(palette[i + 3]);
+    } else {
+	colours.push(palette[i + 0]);
+	colours.push(palette[i + 1]);
+	colours.push(palette[i + 2]);
+	colours.push(palette[i + 3]);
+    }
 };
 
 // clear() method for Array class
@@ -106,10 +129,24 @@ function clear_arr_arr(arr) {
 function render_arrays() {
     var first = true;
     var c;
+    var poly = [];
+    var saved_colour = [];
 
-    clear_arr_arr(coords_arr);
-    clear_arr_arr(colours_arr);
-    coords = new Array();
+    if (mode_poly) {
+	poly_level = 0;
+	if (poly_arr.length > 0) {
+	    clear_arr_arr(poly_arr);
+	}
+	poly_col_arr = [];
+	poly_col_arr[poly_level] = new Array();
+	poly[poly_level] = new Array();
+    } else {
+	clear_arr_arr(coords_arr);
+	coords = new Array();
+    }
+    if (colours_arr.length > 0) {
+	clear_arr_arr(colours_arr);
+    }
     colours = new Array();
     current_colour = 15;
 
@@ -118,7 +155,7 @@ function render_arrays() {
 	switch (pattern[i]) {
 
 	case 'F': // Draw line Forward
-	    if (first) {
+	    if (first && !mode_poly) {
 		// First F in this line strip
 		coords.push(turtle_x);
 		coords.push(turtle_y);
@@ -127,50 +164,123 @@ function render_arrays() {
 	    }
 	    turtle_x += linelen * Math.cos(angle);
 	    turtle_y += linelen * Math.sin(angle);
-	    coords.push(turtle_x);
-	    coords.push(turtle_y);
-	    push_colour();
+	    if (debug) {
+		debug_out('F', true);
+	    }
+	    if (!mode_poly) {
+		coords.push(turtle_x);
+		coords.push(turtle_y);
+		push_colour();
+	    }
 	    break;
 
 	case 'f': // Move forward without drawing
-	    if (!first) {
+	    if (!first && !mode_poly) {
 		// End line strip
-		coords_arr.push(coords);
-		colours_arr.push(colours);
-		coords = new Array();
-		colours = new Array();
+		if (coords.length > 0) {
+		    coords_arr.push(coords);
+		    coords = new Array();
+		}
+		if (colours.length > 0) {
+		    colours_arr.push(colours);
+		    colours = new Array();
+		}
 		first = true;
 	    }
 	    turtle_x += linelen * Math.cos(angle);
 	    turtle_y += linelen * Math.sin(angle);
+	    if (debug) {
+		debug_out('f', true);
+	    }
 	    break;
 
 	case '+':
+	    if (debug) {
+		debug_out('+, turn left', true);
+	    }
 	    angle += turn_angle;
 	    break;
 
 	case '-':
+	    if (debug) {
+		debug_out('-, turn right', true);
+	    }
 	    angle -= turn_angle;
 	    break;
 
 	case '|':
+	    if (debug) {
+		debug_out('turn around', true);
+	    }
 	    angle += pipe_angle;
 	    break;
 
 	case '[':
+	    if (debug) {
+		debug_out('push', true);
+	    }
 	    push();
 	    break;
 
 	case ']':
-	    if (!first) {
-		// End line strip
-		coords_arr.push(coords);
-		colours_arr.push(colours);
-		coords = new Array();
-		colours = new Array();
+	    if (debug) {
+		debug_out('pop', true);
+	    }
+	    if (!first && !mode_poly) {
+		if (coords.length > 0) {
+		    coords_arr.push(coords);
+		    coords = new Array();
+		}
+		if (colours.length > 0) {
+		    colours_arr.push(colours);
+		    colours = new Array();
+		}
 		first = true;
 	    }
 	    pop();
+	    break;
+
+	case '{':
+	    saved_colour.push(current_colour);
+	    poly_level++;
+	    poly[poly_level] = new Array();
+	    poly_col_arr[poly_level] = new Array();
+	    first = true;
+	    if (debug) {
+		debug_out('Save C' + current_colour + ', { level: ' + poly_level, true);
+	    }
+	    break;
+
+	case '}':
+	    if (debug) {
+		debug_out('} level: ' + poly_level + ', ' + poly[poly_level].length / 2 + ' vertices, ');
+	    }
+	    if (poly[poly_level].length > 0) {
+		poly_arr.push(poly[poly_level]);
+		colours_arr.push(poly_col_arr[poly_level]);
+		if (poly_level > 0) {
+		    poly_level--;
+		} else {
+		    debug_out('Warning: unmatched polygon end', true);
+		    poly[poly_level] = new Array();
+		    poly_col_arr[poly_level] = new Array();
+		}
+	    }
+	    current_colour = saved_colour.pop();
+	    if (debug) {
+		debug_out('restore C' + current_colour, true);
+	    }
+	    first = true;
+	    break;
+
+	case '.': // Record polygon vertex
+	    if (debug) {
+		debug_out('.', true);
+	    }
+	    first = false;
+	    poly[poly_level].push(turtle_x);
+	    poly[poly_level].push(turtle_y);
+	    push_colour();
 	    break;
 
 	case 'C':
@@ -184,12 +294,27 @@ function render_arrays() {
 	    }
 	    current_colour = parseInt(num);
 	    i--; // increased by for loop
+	    if (debug) {
+		debug_out('C' + current_colour, true);
+	    }
 	    break;
 	}
     }
-    // End last line strip
-    coords_arr.push(coords);
-    colours_arr.push(colours);
+    // End last strip
+    if (mode_poly) {
+	if (debug) {
+	    debug_out('Last ' + poly[poly_level].length + ' vertices', true);
+	}
+	if (poly[poly_level].length > 0) {
+	    poly_arr.push(poly[poly_level]);
+	    colours_arr.push(poly_col_arr[poly_level]);
+	}
+    } else {
+	if (coords.length > 0) {
+	    coords_arr.push(coords);
+	    colours_arr.push(colours);
+	}
+    }
 };
 
 function angles_to_radians() {
@@ -197,267 +322,6 @@ function angles_to_radians() {
     turn_angle *= 0.01745329251994;
     pipe_angle = -180 * 0.01745329251994;
 }
-
-function lsys_levy() {
-    lsys_name = '<a href="http://en.wikipedia.org/wiki/L%C3%A9vy_C_curve" target="_blank">Levy C curve</a>';
-    if (multicolour) {
-	axiom = '+C4F--C12F+';
-	linelen = 2.0;
-    } else {
-	axiom = 'F';
-	linelen = 3.0;
-    }
-    rules["F"] = '+F--F+';
-    rules["+"] = '+';
-    rules["-"] = '-';
-    pattern = axiom;
-    turn_angle = 45;
-    lendiv = Math.sqrt(2);
-    max_level = 19;
-    // Initial turtle position and angle
-    turtle_x = -1.5;
-    turtle_y = -1.0;
-    angle = 0;
-};
-
-function lsys_terdragon() {
-    lsys_name = '<a href="http://en.wikipedia.org/wiki/Dragon_curve#Terdragon" target="_blank">Terdragon</a>';
-    if (multicolour) {
-	axiom = 'C2F+C14F-C4F';
-	angle = -45 - (30 * level);
-	linelen = 1.7;
-    } else {
-	axiom = 'F';
-	angle = -20 - (30 * level);
-	linelen = 3.0;
-    }
-    rules["F"] = 'F+F-F';
-    rules["+"] = '+';
-    rules["-"] = '-';
-    pattern = axiom;
-    turn_angle = 120;
-    lendiv = Math.sqrt(3);
-    max_level = 12;
-    turtle_x = -1.5;
-    turtle_y = 0.5;
-};
-
-function lsys_twindragon() {
-    lsys_name = '<a href="http://en.wikipedia.org/wiki/Dragon_curve#Twindragon" target="_blank">Twindragon</a> (Davis-Knuth)';
-    if (multicolour) {
-	axiom = 'C4Fx+C14Fx+';
-    } else {
-	axiom = 'Fx+Fx-';
-    }
-    rules["F"] = '';
-    rules["x"] = 'x+yF';
-    rules["y"] = 'Fx-y';
-    rules["+"] = '+';
-    rules["-"] = '-';
-    pattern = axiom;
-    turn_angle = 90;
-    angle = -20 - (45 * level);
-    linelen = 3.0;
-    lendiv = Math.sqrt(2);
-    max_level = 19;
-    turtle_x = -0.961;
-    turtle_y = -0.448;
-};
-
-function lsys_dragon() {
-    lsys_name = '<a href="http://en.wikipedia.org/wiki/Dragon_curve" target="_blank">Dragon</a> (Harter-Heighway)';
-    if (multicolour) {
-	axiom = 'C4Fx-C14Fy';
-	rules["x"] = 'Fx+Fy';
-	rules["y"] = 'Fx-Fy';
-	angle = -110 - (45 * level);
-	linelen = 1.5;
-	turtle_x = 1.13;
-	turtle_y = 0.77;
-    } else {
-	axiom = 'Fx';
-	rules["x"] = 'x+yF+';
-	rules["y"] = '-Fx-y';
-	angle = -20 - (45 * level);
-	linelen = 3.0;
-	turtle_x = -0.8;
-	turtle_y = -0.125;
-    }
-    rules["F"] = '';
-    rules["+"] = '+';
-    rules["-"] = '-';
-    pattern = axiom;
-    turn_angle = 90;
-
-    lendiv = Math.sqrt(2);
-    max_level = 20;
-};
-
-function lsys_snowflake() {
-    lsys_name = '<a href="http://en.wikipedia.org/wiki/Koch_snowflake" target="_blank">Koch snowflake</a>';
-    if (multicolour) {
-	axiom = 'C2F--C14F--C4F';
-    } else {
-	axiom = 'F--F--F';
-    }
-    rules["F"] = 'F+F--F+F';
-    rules["+"] = '+';
-    rules["-"] = '-';
-    pattern = axiom;
-    turn_angle = 60;
-    linelen = 3.0;
-    lendiv = 3;
-    max_level = 9;
-    turtle_x = -1.5;
-    turtle_y = 0.85;
-    angle = 0;
-};
-
-function lsys_flowsnake() {
-    lsys_name = '<a href="http://en.wikipedia.org/wiki/Gosper_curve" target="_blank">Flowsnake</a>';
-    if (multicolour) {
-	axiom = 'C2Fl-C6Fr--C3Fr+C4Fl++C10FlC14Fl+C12Fr-';
-	linelen = 1.2;
-	angle = 15;
-    } else {
-	axiom = 'Fl';
-	linelen = 3.0;
-	angle = 0;
-    }
-    rules["F"] = '';
-    rules["l"] = 'Fl-Fr--Fr+Fl++FlFl+Fr-';
-    rules["r"] = '+Fl-FrFr--Fr-Fl++Fl+Fr';
-    rules["+"] = '+';
-    rules["-"] = '-';
-    pattern = axiom;
-    turn_angle = 60;
-    lendiv = 2.65;
-    max_level = 6;
-    turtle_x = -1.5;
-    turtle_y = 0.85;
-    angle += 19.3 * level;
-};
-
-function lsys_sierpinski() {
-    lsys_name = '<a href="http://en.wikipedia.org/wiki/Sierpinski_triangle" target="_blank">Sierpinski triangle</a>';
-    if (multicolour) {
-	axiom = '+C2Fb-C14Fa-C4Fb+';
-	linelen = 1.5;
-    } else {
-	axiom = 'Fa';
-	linelen = 3;
-    }
-    rules["F"] = '';
-    rules["a"] = '+Fb-Fa-Fb+';
-    rules["b"] = '-Fa+Fb+Fa-';
-    rules["+"] = '+';
-    rules["-"] = '-';
-    pattern = axiom;
-    turn_angle = 60;
-    lendiv = 2.0;
-    max_level = 12;
-    turtle_x = -1.5;
-    turtle_y = -1.33;
-    angle = 0;
-};
-
-function lsys_church() {
-    lsys_name = '<a href="http://www.nahee.com/spanky/www/fractint/lsys/spacefilling.html" target="_blank">Dekking\'s Church</a>';
-    if (multicolour) {
-	axiom = 'C1wC7xC15yC7z';
-    } else {
-	axiom = 'wxyz';
-    }
-    linelen = 2;
-    rules["F"] = '';
-    rules["w"] = 'Fw+F-zFw-F+x';
-    rules["x"] = 'Fw+F-z';
-    rules["y"] = '--F++y+F-z';
-    rules["z"] = '--F++y-F+x--F++y-F+x';
-    rules["+"] = '+';
-    rules["-"] = '-';
-    pattern = axiom;
-    turn_angle = 90;
-    lendiv = 1.732;
-    max_level = 11;
-    turtle_x = -1.732;
-    turtle_y = -1.0;
-    angle = 0;
-};
-
-function lsys_plant() {
-    lsys_name = '<a href="http://en.wikipedia.org/wiki/L-system#Example_7:_Fractal_plant" target="_blank">Plant</a>';
-    if (multicolour) {
-	axiom = 'C12x';
-    } else {
-	axiom = 'x';
-    }
-    rules["F"] = 'FF';
-    rules["x"] = 'F-[[x]+x]+F[+Fx]-x';
-    rules["+"] = '+';
-    rules["-"] = '-';
-    rules["["] = '[';
-    rules["]"] = ']';
-    pattern = axiom;
-    turn_angle = 23;
-    linelen = 1.5;
-    lendiv = 2;
-    max_level = 9;
-    turtle_x = 0.0;
-    turtle_y = -2.0;
-    angle = 90;
-};
-
-function lsys_sphinx() {
-    lsys_name = '<a href="http://www.nahee.com/spanky/www/fractint/lsys/tilings.html" target="_blank">Sphinx</a> (Martin Gardner\'s "Penrose Tiles to Trapdoor Ciphers")';
-    axiom = 'x';
-    rules["F"] = 'ff';
-    rules["f"] = 'ff';
-    rules["x"] = '+FF-yFF+FF--FFF|x|F--yFFFyFFF|';
-    rules["y"] = '-FF+xFF-FF++FFF|y|F++xFFFxFFF|';
-    rules["+"] = '+';
-    rules["-"] = '-';
-    rules["|"] = '|';
-    pattern = axiom;
-    turn_angle = 60;
-    linelen = 2;
-    lendiv = 2.0;
-    max_level = 8;
-    turtle_x = -3.0;
-    turtle_y = -1.6;
-    angle = 0;
-};
-
-function lsys_penrose1() {
-    lsys_name = '<a href="http://en.wikipedia.org/wiki/Penrose_tiling" target="_blank">Penrose</a> #1';
-    if (multicolour) {
-	axiom = '+wC4FC6F--xC14FC4F---yC4FC14F--zC6FC4F';
-	rules["w"] = 'yC4FC14F++zC6FC4F----xC14FC4F[-yC4FC14F----wC4FC6F]++';
-	rules["x"] = '+yC4FC14F--zC6FC4F[---wC4FC6F--xC14FC4F]+';
-	rules["y"] = '-wC4FC6F++xC14FC4F[+++yC4FC14F++zC6FC4F]-';
-	rules["z"] = '--yC4FC14F++++wC4FC6F[+zC6FC4F++++xC14FC4F]--xC14FC4F';
-	linelen = 1.0;
-    } else {
-	axiom = '+wF--xF---yF--zF';
-	rules["w"] = 'yF++zF----xF[-yF----wF]++';
-	rules["x"] = '+yF--zF[---wF--xF]+';
-	rules["y"] = '-wF++xF[+++yF++zF]-';
-	rules["z"] = '--yF++++wF[+zF++++xF]--xF';
-	linelen = 2.0;
-    }
-    rules["F"] = '';
-    rules["+"] = '+';
-    rules["-"] = '-';
-    rules["["] = '[';
-    rules["]"] = ']';
-    pattern = axiom;
-    turn_angle = 36;
-    lendiv = 1.65;
-    max_level = 7;
-    turtle_x = -1.5;
-    turtle_y = 0.0;
-    angle = 0;
-};
 
 function clear_lsys() {
     pattern = '';
@@ -497,13 +361,13 @@ function expand_lsys() {
 
 function out_keys() {
     debug_out('<br />' + 'KEYS');
-    debug_out('<pre>' + 
+    debug_out('<pre>' +
 	      ' o,p        ; Cycle through L-systems' + '\n' +
 	      ' m          ; Toggle multi/mono colour' + '\n' +
 	      ' +,c        ; Increase level' + '\n' +
 	      ' -,x        ; Decrease level</pre>');
     debug_out('CAMERA');
-    debug_out('<pre>' + 
+    debug_out('<pre>' +
 	      ' Up,Down    ; Zoom in/out (z-axis)' + '\n' +
 	      ' Left,Right ; Move left/right (x-axis)' + '\n' +
 	      ' f,v        ; Move up/down (y-axis)' + '\n' +
@@ -530,21 +394,32 @@ function init_lsystem() {
 
 // Continue here after small delay
 function init_lsystem2() {
-    var i, vertices;
+    var i, vertices, cols;
 
     clear_debug();
     for (i = 0; i < level; i++) {
 	expand_lsys();
     }
     render_arrays();
-    debug_out('L-system: ' + lsys_name, true);
-    debug_out('Level: ' + level, true);
-    vertices = 0;
-    for (i = 0; i < coords_arr.length; i++) {
-	vertices += coords_arr[i].length / 2;
+    if (!debug) {
+	debug_out('L-system: ' + lsys_name, true);
+	debug_out('Level: ' + level, true);
+	vertices = 0;
+	cols = 0;
+	if (mode_poly) {
+	    for (i = 0; i < poly_arr.length; i++) {
+		vertices += poly_arr[i].length / 2;
+		cols += colours_arr[i].length / 4;
+	    }
+	} else {
+	    for (i = 0; i < coords_arr.length; i++) {
+		vertices += coords_arr[i].length / 2;
+		cols += colours_arr[i].length / 4;
+	    }
+	}
+	debug_out('Number of vertices: ' + vertices + ' (' + cols + ')', true);
+	out_keys();
     }
-    debug_out('Number of vertices: ' + vertices, true);
-    out_keys();
     init_buffers();
     rendered = true;
 };
@@ -552,10 +427,14 @@ function init_lsystem2() {
 // Called only once, at startup
 function init_lindenmayer() {
     // L-systems will appear in this order
+    lsystems.push(lsys_sphinx_polygon);
+    lsystems.push(lsys_penrose1);
+    lsystems.push(lsys_penrose_polygon);
+    lsystems.push(lsys_penrose_polygon_2);
     lsystems.push(lsys_dragon);
     lsystems.push(lsys_twindragon);
     lsystems.push(lsys_sierpinski);
-    lsystems.push(lsys_penrose1);
+    lsystems.push(lsys_sierpinski_polygon);
     lsystems.push(lsys_plant);
     lsystems.push(lsys_terdragon);
     lsystems.push(lsys_church);
@@ -570,14 +449,17 @@ function init_lindenmayer() {
 // Mostly OpenGL stuff below
 
 var linebuf = [];
+var polybuf = [];
 var colbuf = [];
 var linebuf_sz = 2;
+var polybuf_sz = 2;
 var colbuf_sz = 4;
 
 function init_buffers() {
     var i;
 
     linebuf.clear();
+    polybuf.clear();
     colbuf.clear();
 
     for (i = 0; i < coords_arr.length; i++) {
@@ -585,7 +467,14 @@ function init_buffers() {
 	gl.bindBuffer(gl.ARRAY_BUFFER, linebuf[i]);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coords_arr[i]), gl.STATIC_DRAW);
 	linebuf[i].num_items = coords_arr[i].length / 2;
-
+    }
+    for (i = 0; i < poly_arr.length; i++) {
+	polybuf[i] = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, polybuf[i]);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(poly_arr[i]), gl.STATIC_DRAW);
+	polybuf[i].num_items = poly_arr[i].length / 2;
+    }
+    for (i = 0; i < colours_arr.length; i++) {
 	colbuf[i] = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, colbuf[i]);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colours_arr[i]), gl.STATIC_DRAW);
@@ -607,12 +496,22 @@ function draw_scene() {
 
 	set_mv_uniform();
 
-	for (i = 0; i < coords_arr.length; i++) {
-	    gl.bindBuffer(gl.ARRAY_BUFFER, linebuf[i]);
-	    gl.vertexAttribPointer(shader_program.vertex_pos, linebuf_sz, gl.FLOAT, false, 0, 0);
-	    gl.bindBuffer(gl.ARRAY_BUFFER, colbuf[i]);
-	    gl.vertexAttribPointer(shader_program.vertex_col, colbuf_sz, gl.FLOAT, false, 0, 0);
-	    gl.drawArrays(gl.LINE_STRIP, 0, linebuf[i].num_items);
+	if (mode_poly) {
+	    for (i = 0; i < poly_arr.length; i++) {
+		gl.bindBuffer(gl.ARRAY_BUFFER, polybuf[i]);
+		gl.vertexAttribPointer(shader_program.vertex_pos, polybuf_sz, gl.FLOAT, false, 0, 0);
+		gl.bindBuffer(gl.ARRAY_BUFFER, colbuf[i]);
+		gl.vertexAttribPointer(shader_program.vertex_col, colbuf_sz, gl.FLOAT, false, 0, 0);
+		gl.drawArrays(gl.TRIANGLE_FAN, 0, polybuf[i].num_items);
+	    }
+	} else {
+	    for (i = 0; i < coords_arr.length; i++) {
+		gl.bindBuffer(gl.ARRAY_BUFFER, linebuf[i]);
+		gl.vertexAttribPointer(shader_program.vertex_pos, linebuf_sz, gl.FLOAT, false, 0, 0);
+		gl.bindBuffer(gl.ARRAY_BUFFER, colbuf[i]);
+		gl.vertexAttribPointer(shader_program.vertex_col, colbuf_sz, gl.FLOAT, false, 0, 0);
+		gl.drawArrays(gl.LINE_STRIP, 0, linebuf[i].num_items);
+	    }
 	}
     }
 };

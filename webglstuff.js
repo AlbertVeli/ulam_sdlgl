@@ -1,4 +1,13 @@
-// GL stuff, partly from lesson 2/6 at http://learningwebgl.com/
+/* (k) ALL RIGHTS REVERSED - Reprint what you like
+ *
+ * GL stuff, partly from lesson 2/6 at http://learningwebgl.com/
+ *
+ *
+ * Boomtime, the 13th day of Bureaucracy in the YOLD 3179
+ *
+ * Albert Veli
+ */
+
 var gl;
 var canvas;
 
@@ -267,13 +276,32 @@ function key_down(event) {
 	case 68:
 	    // d
 	    clear_debug();
-	    debug_out(pattern);
-	    debug_out('', true);
-	    for (var i = 0; i < coords.length; i++) {
-		if (i % 2 == 0) {
-		    debug_out(' (' + coords[i] + ',');
+	    debug_out(pattern, true);
+	    for (var j = 0; j < coords_arr.length; j++) {
+	    debug_out('Line ' + j + ': ');
+		for (var i = 0; i < coords_arr[j].length; i++) {
+		    if (i % 2 == 0) {
+			debug_out(' (' + coords_arr[j][i] + ',');
+		    } else {
+			debug_out(coords_arr[j][i] + ')');
+		    }
+		}
+		debug_out(' end', true);
+	    }
+	    for (var j = 0; j < poly_arr.length; j++) {
+	    debug_out('Poly ' + j + ': ');
+		for (var i = 0; i < poly_arr[j].length; i++) {
+		    if (i % 2 == 0) {
+			debug_out(' (' + poly_arr[j][i] + ',');
+		    } else {
+			debug_out(poly_arr[j][i] + ')');
+		    }
+		}
+		debug_out(' end', true);
+		if (debug) {
+		    debug = false;
 		} else {
-		    debug_out(coords[i] + ')');
+		    debug = true;
 		}
 	    }
 	    break;
