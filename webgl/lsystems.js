@@ -413,3 +413,34 @@ function lsys_penrose_polygon_2() {
     turtle_y = 0.0;
     angle = 0;
 };
+
+function lsys_lace3060() {
+    lsys_name = '<a href="http://mathafou.free.fr/themes_en/fractls.html" target="_blank">Triangle 30-60 degrees</a>';
+    if (multicolour) {
+	axiom =
+	    'C10+++x--F--zFx+++F+++zFx--F--z+++F+++x--F--zFx--F' +
+	    'C9--zFx--F--z+++F+++x--F--zFx+++F+++zFx--F--zF' +
+	    'C15x--F--zFx+++F+++zFx--F--z+++F+++x--F--zFx+';
+    } else {
+	axiom =
+	    '+++x--F--zFx+++F+++zFx--F--z+++F+++x--F--zFx--F' +
+	    '--zFx--F--z+++F+++x--F--zFx+++F+++zFx--F--zF' +
+	    'x--F--zFx+++F+++zFx--F--z+++F+++x--F--zFx+';
+    }
+    rules["F"] = 'F';
+    rules["w"] = '+++x--F--zFx+';
+    rules["x"] = '---w++F++yFw-';
+    rules["y"] = '+zFx--F--z+++';
+    rules["z"] = '-yFw++F++y---';
+    rules["+"] = '+';
+    rules["-"] = '-';
+    mode_poly = false;
+    pattern = axiom;
+    turn_angle = 30;
+    linelen = 0.33;
+    lendiv = 1.75;
+    max_level = 10;
+    turtle_x = -1.8;
+    turtle_y = -1.0;
+    angle = 0;
+};

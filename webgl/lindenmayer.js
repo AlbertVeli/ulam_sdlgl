@@ -427,6 +427,7 @@ function init_lsystem2() {
 // Called only once, at startup
 function init_lindenmayer() {
     // L-systems will appear in this order
+    lsystems.push(lsys_lace3060);
     lsystems.push(lsys_sphinx_polygon);
     lsystems.push(lsys_penrose1);
     lsystems.push(lsys_penrose_polygon);
