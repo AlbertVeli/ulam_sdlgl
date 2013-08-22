@@ -11,6 +11,8 @@
 var gl;
 var canvas;
 
+var rot_mat;
+
 function init_gl() {
     try {
 	gl = WebGLUtils.setupWebGL(canvas);
@@ -114,8 +116,10 @@ var ypos = 0.0;
 var dz = 0.0;
 var dx = 0.0;
 var dy = 0.0;
+var mdx = 0.0;
+var mdy = 0.0;
 
-function handle_keys(elapsed) {
+function animate_keys_mouse(elapsed) {
     var maxx = 50.0;
     var xchange = 0.0001 * elapsed;
     if (pressed_keys[37]) {
@@ -177,6 +181,16 @@ function handle_keys(elapsed) {
 	zoom = -99.9;
 	dz = 0;
     }
+
+    if (elapsed > 1) {
+	mdx /= elapsed * 0.07;
+	mdy /= elapsed * 0.07;
+	var new_rotmat = mat4.create();
+	mat4.identity(new_rotmat);
+	mat4.rotate(new_rotmat, mdx * 0.005, [0, 1, 0]);
+	mat4.rotate(new_rotmat, mdy * 0.005, [1, 0, 0]);
+	mat4.multiply(new_rotmat, rot_mat, rot_mat);
+    }
 }
 
 var last_time = 0;
@@ -184,7 +198,7 @@ function animate() {
     var now = new Date().getTime();
     if (last_time != 0) {
 	var elapsed = now - last_time;
-	handle_keys(elapsed);
+	animate_keys_mouse(elapsed);
     }
     last_time = now;
 }
@@ -193,12 +207,15 @@ function key_down(event) {
     if (!pressed_keys[event.keyCode]) {
 	switch(event.keyCode) {
 	case 32:
-	    // Space, reset zoom
+	    // Space, reset camera
 	    dz = 0;
 	    dx = 0;
 	    zoom = -7;
 	    xpos = 0;
 	    ypos = 0;
+	    mat4.identity(rot_mat);
+	    mdx = 0;
+	    mdy = 0;
 	    break;
 
 	case 38:
@@ -319,11 +336,42 @@ function key_down(event) {
 	}
 	pressed_keys[event.keyCode] = true;
     }
-}
+};
 
 function key_up(event) {
     pressed_keys[event.keyCode] = false;
-}
+};
+
+var last_x = 0;
+var last_y = 0;
+var mouse_pressed = false;
+
+function mouse_down(event) {
+    mouse_pressed = true;
+    last_x = event.clientX;
+    last_y = event.clientY;
+};
+
+function mouse_up(event) {
+    mouse_pressed = false;
+};
+
+function mouse_move(event) {
+    var new_x = event.clientX;
+    var new_y = event.clientY;
+
+    if (!mouse_pressed) {
+	last_x = new_x;
+	last_y = new_y;
+	return;
+    }
+
+    mdx = new_x - last_x;
+    mdy = new_y - last_y;
+
+    last_x = new_x;
+    last_y = new_y;
+};
 
 function render() {
     requestAnimFrame(render, canvas);
@@ -344,8 +392,17 @@ function start_webgl() {
     // p_matrix is never changed, only need to set it once
     gl.uniformMatrix4fv(shader_program.p_matrix, false, p_matrix);
 
+    rot_mat = mat4.create();
+    mat4.identity(rot_mat);
+
+    // kbd callbacks
     document.onkeydown = key_down;
     document.onkeyup = key_up;
+
+    // mouse callbacks
+    canvas.onmousedown = mouse_down;
+    document.onmouseup = mouse_up;
+    document.onmousemove = mouse_move;
 
     render();
 }
