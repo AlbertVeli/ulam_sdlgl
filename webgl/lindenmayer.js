@@ -371,6 +371,7 @@ function out_keys() {
 	      ' Up,Down    ; Zoom in/out (z-axis)' + '\n' +
 	      ' Left,Right ; Move left/right (x-axis)' + '\n' +
 	      ' f,v        ; Move up/down (y-axis)' + '\n' +
+	      ' Mouse      ; Click/drag to rotate' + '\n' +
 	      ' Space      ; Reset camera</pre>');
 };
 
@@ -427,7 +428,6 @@ function init_lsystem2() {
 // Called only once, at startup
 function init_lindenmayer() {
     // L-systems will appear in this order
-    lsystems.push(lsys_lace3060);
     lsystems.push(lsys_sphinx_polygon);
     lsystems.push(lsys_penrose1);
     lsystems.push(lsys_penrose_polygon);
@@ -437,6 +437,7 @@ function init_lindenmayer() {
     lsystems.push(lsys_sierpinski);
     lsystems.push(lsys_sierpinski_polygon);
     lsystems.push(lsys_plant);
+    lsystems.push(lsys_lace3060);
     lsystems.push(lsys_terdragon);
     lsystems.push(lsys_church);
     lsystems.push(lsys_levy);
@@ -490,6 +491,9 @@ function draw_scene() {
 
     // Move camera
     mat4.translate(mv_matrix, [xpos, ypos, zoom]);
+
+    // Rotate camera
+    mat4.multiply(mv_matrix, rot_mat);
 
     // Draw line segments (if render is finised)
     if (rendered) {
