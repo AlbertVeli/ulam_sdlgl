@@ -346,6 +346,23 @@ var last_x = 0;
 var last_y = 0;
 var mouse_pressed = false;
 
+function mouse_scroll(event) {
+    var delta = 0;
+    if (!event) {
+        event = window.event;
+    }
+    if (event.wheelDelta) {
+        delta = event.wheelDelta/120;
+    } else if (event.detail) {
+        delta = -event.detail/3;
+    }
+    if (delta > 0) {
+	dz = zoom * -0.03;
+    } else {
+	dz = zoom * 0.03;
+    }
+};
+
 function mouse_down(event) {
     mouse_pressed = true;
     last_x = event.clientX;
@@ -400,6 +417,11 @@ function start_webgl() {
     document.onkeyup = key_up;
 
     // mouse callbacks
+    if (window.addEventListener) {
+        window.addEventListener('DOMMouseScroll', mouse_scroll, false);
+    } else {
+	window.onmousewheel = document.onmousewheel = mouse_scroll;
+    }
     canvas.onmousedown = mouse_down;
     document.onmouseup = mouse_up;
     document.onmousemove = mouse_move;
