@@ -3,5 +3,6 @@ lindenmayer
 ulam/ulam
 recursive/koch
 .DS_Store
+*.xcuserdatad
 *.o
 *~
