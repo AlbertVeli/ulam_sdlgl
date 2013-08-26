@@ -25,10 +25,13 @@ Live demo using WebGL:
 
 Source code for the demo is in the webgl subdirectory.
 
-The subdirectory ulam contains a program that uses OpenGL to draw an
-Ulam spiral (a method of visualizing prime numbers) and the recursive
-subdirectory contains a program that draws some of these fractals
-using recursive methods (much slower).
+The beginnings of an ios OpenGL ES 2.0 Lindenmayer app is in the ios
+subdirectory. Currently it only draws some lines. But it's a start :)
+
+The subdirectory ulam contains a program that uses desktop OpenGL +
+SDL to draw an Ulam spiral (a method of visualizing prime numbers) and
+the recursive subdirectory contains a program that draws some of these
+fractals using recursive methods (much slower).
 
 
 Sweetmorn, the 2nd day of Bureaucracy in the YOLD 3179
