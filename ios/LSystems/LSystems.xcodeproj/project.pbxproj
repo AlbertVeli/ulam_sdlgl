@@ -23,6 +23,7 @@
 		35DF647D138C7A0900FF9459 /* CC3Math.m in Sources */ = {isa = PBXBuildFile; fileRef = 35DF6479138C7A0900FF9459 /* CC3Math.m */; };
 		35DF647F138C869600FF9459 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 35DF647E138C869600FF9459 /* Icon.png */; };
 		501BF52517CA760A00FB6042 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 501BF52417CA760A00FB6042 /* Default-568h@2x.png */; };
+		50A1C5EA17CCED3E00CF8943 /* LindenmayerBrain.m in Sources */ = {isa = PBXBuildFile; fileRef = 50A1C5E917CCED3E00CF8943 /* LindenmayerBrain.m */; };
 		50EE629A17CA4EDD00053D57 /* fragment.glsl in Resources */ = {isa = PBXBuildFile; fileRef = 50EE629917CA4EDD00053D57 /* fragment.glsl */; };
 		50EE629C17CA4EFA00053D57 /* vertex.glsl in Resources */ = {isa = PBXBuildFile; fileRef = 50EE629B17CA4EFA00053D57 /* vertex.glsl */; };
 /* End PBXBuildFile section */
@@ -55,6 +56,8 @@
 		35DF6479138C7A0900FF9459 /* CC3Math.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CC3Math.m; sourceTree = "<group>"; };
 		35DF647E138C869600FF9459 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
 		501BF52417CA760A00FB6042 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
+		50A1C5E817CCED3E00CF8943 /* LindenmayerBrain.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LindenmayerBrain.h; path = Model/LindenmayerBrain.h; sourceTree = "<group>"; };
+		50A1C5E917CCED3E00CF8943 /* LindenmayerBrain.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = LindenmayerBrain.m; path = Model/LindenmayerBrain.m; sourceTree = "<group>"; };
 		50EE629917CA4EDD00053D57 /* fragment.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = fragment.glsl; sourceTree = "<group>"; };
 		50EE629B17CA4EFA00053D57 /* vertex.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = vertex.glsl; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -108,6 +111,7 @@
 		35DF6446138C40D500FF9459 /* LSystems */ = {
 			isa = PBXGroup;
 			children = (
+				50A1C5EB17CCED4E00CF8943 /* Model */,
 				35DF646F138C79F900FF9459 /* Math */,
 				35DF644F138C40D500FF9459 /* LSystemsAppDelegate.h */,
 				50EE629917CA4EDD00053D57 /* fragment.glsl */,
@@ -148,6 +152,15 @@
 				35DF6479138C7A0900FF9459 /* CC3Math.m */,
 			);
 			name = Math;
+			sourceTree = "<group>";
+		};
+		50A1C5EB17CCED4E00CF8943 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				50A1C5E817CCED3E00CF8943 /* LindenmayerBrain.h */,
+				50A1C5E917CCED3E00CF8943 /* LindenmayerBrain.m */,
+			);
+			name = Model;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -223,6 +236,7 @@
 				35DF647B138C7A0900FF9459 /* CC3GLMatrix.m in Sources */,
 				35DF647C138C7A0900FF9459 /* CC3Kazmath.c in Sources */,
 				35DF647D138C7A0900FF9459 /* CC3Math.m in Sources */,
+				50A1C5EA17CCED3E00CF8943 /* LindenmayerBrain.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -290,7 +304,7 @@
 				GCC_PREFIX_HEADER = "LSystems/LSystems-Prefix.pch";
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				INFOPLIST_FILE = "LSystems/LSystems-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -305,7 +319,7 @@
 				GCC_PREFIX_HEADER = "LSystems/LSystems-Prefix.pch";
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				INFOPLIST_FILE = "LSystems/LSystems-Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				VALIDATE_PRODUCT = YES;
 				WRAPPER_EXTENSION = app;
